@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import javafx.scene.canvas.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.canvas.Canvas?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.BorderPane?>
+
+<BorderPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="ru.bvpotapenko.se.lesson1.controller.Controller">
+    <top>
+        <TableView fx:id="tableView" prefHeight="123.0" prefWidth="400.0" BorderPane.alignment="CENTER">
+            <columns>
+                <TableColumn editable="false" prefWidth="20.0" text="№" fx:id="numberColumn"/>
+                <TableColumn editable="false" prefWidth="150.0" text="Name" fx:id="nameColumn"/>
+                <TableColumn prefWidth="75.0" text="Stamina" fx:id="staminaColumn"/>
+                <TableColumn prefWidth="75.0" text="Power" fx:id="powerColumn"/>
+                <TableColumn editable="false" prefWidth="75.0" text="Fails" fx:id="failsColumn"/>
+            </columns>
+        </TableView>
+    </top>
+    <center>
+        <Canvas fx:id="canvas" height="250.0" width="400.0" BorderPane.alignment="CENTER"/>
+    </center>
+    <bottom>
+        <ToolBar minHeight="50.0" minWidth="400.0" BorderPane.alignment="CENTER">
+            <items>
+                <Button fx:id="startButton" mnemonicParsing="false" text="Start"/>
+                <Button fx:id="newTeamButton" mnemonicParsing="false" onAction="#generateNewTeam" text="Generate new team"/>
+            </items>
+        </ToolBar>
+    </bottom>
+
+</BorderPane>
