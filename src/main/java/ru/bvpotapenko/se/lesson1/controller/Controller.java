@@ -14,7 +14,9 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.paint.Color;
 import ru.bvpotapenko.se.lesson1.console.Course;
 import ru.bvpotapenko.se.lesson1.console.TeamMember;
+import ru.bvpotapenko.se.lesson1.model.TeamMemberToken;
 import ru.bvpotapenko.se.lesson1.model.Track;
+import ru.bvpotapenko.se.lesson1.model.obstacle.Obstacle;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -44,6 +46,7 @@ public class Controller implements Initializable {
 
     private Course course;
     private List<Track> trackList;
+    private List<TeamMemberToken> teamMemberTokenList;
     private final int TRACK_AMOUNT = 4;
     private final int TRACK_LENGTH = 340;
     private final int DISTANCE_BETWEEN_TRACKS = 60;
@@ -62,6 +65,8 @@ public class Controller implements Initializable {
         powerColumn.setCellValueFactory(new PropertyValueFactory<TeamMember, String>("power"));
 
         tableView.setItems(teamMemberData);
+
+        drawTeam();
     }
 
     private void initData() {
@@ -72,6 +77,7 @@ public class Controller implements Initializable {
 
         course = new Course();
         trackList = new ArrayList<>(TRACK_AMOUNT);
+        teamMemberTokenList = new ArrayList<>(TRACK_AMOUNT);
     }
 
 
@@ -80,6 +86,7 @@ public class Controller implements Initializable {
             teamMemberData.add(new TeamMember());
         tableView.getItems().remove(0, 4);
         tableView.setItems(teamMemberData);
+        drawTeam();
 
     }
 
@@ -88,12 +95,49 @@ public class Controller implements Initializable {
         gc.strokeText("START", 10, 20);
         gc.strokeText("FINISH", 350, 20);
 
-        for (int trackNumber =0; trackNumber < TRACK_AMOUNT; trackNumber++){
+        for (int trackNumber = 0; trackNumber < TRACK_AMOUNT; trackNumber++) {
             int track_Y = FIRST_TRACK_Y + DISTANCE_BETWEEN_TRACKS * trackNumber;
             trackList.add(new Track(TRACK_LENGTH, FIRST_TRACK_X, track_Y, gc, course));
         }
     }
 
+    private void drawTeam() { //fixme: Bad case of hardcode. Didn't manage to deal with the ObservableList
+        GraphicsContext gc = canvas.getGraphicsContext2D();
+        teamMemberTokenList.clear();
+        for (int trackNumber = 0; trackNumber < TRACK_AMOUNT; trackNumber++) {
+            TeamMember tm = teamMemberData.get(trackNumber);
+            int track_Y = FIRST_TRACK_Y + DISTANCE_BETWEEN_TRACKS * trackNumber;
+            TeamMemberToken teamMemberToken = new TeamMemberToken(FIRST_TRACK_X, track_Y, Color.ORANGE, gc, tm);
+            teamMemberTokenList.add(teamMemberToken);
+            teamMemberToken.drawShape();
+        }
+    }
+
+    public void doIt(){
+        for (int i = 0; i < 4; i++){
+            int initX = trackList.get(i).getX();
+            int initY = trackList.get(i).getY();
+            int dx = 10;
+            int sleep = 50;
+            for (Obstacle o : trackList.get(i).getTrackObstacles().getObstacles()){
+                int oX = o.getX();
+                int oY = o.getY();
+                //animate. A stupid way to animate. I should use scene graph
+                for (int curX = initX+dx; curX < oX; curX+=dx)
+                try{
+                    TeamMemberToken newToken = teamMemberTokenList.get(i);
+                    newToken.setColor(Color.WHITE);
+                    newToken.drawShape();
+                    newToken.setX(curX);
+                    newToken.setColor(Color.YELLOW);
+                    newToken.drawShape();
+                    Thread.sleep(sleep);
+                }catch(Exception e){
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
     /*private void drawSomething(GraphicsContext gc) {
 
         int obstaclesAmount = course.getObstacles().length;

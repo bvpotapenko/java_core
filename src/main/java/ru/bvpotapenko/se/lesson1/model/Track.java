@@ -44,4 +44,16 @@ public class Track {
         trackFinishFlag.drawShape();
         trackObstacles.drawShape();
     }
+
+    public TrackObstacles getTrackObstacles() {
+        return trackObstacles;
+    }
+
+    public int getX() {
+        return x;
+    }
+
+    public int getY() {
+        return y;
+    }
 }

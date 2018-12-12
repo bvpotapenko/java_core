@@ -9,7 +9,6 @@ public class TrackLine extends AbstractTrackObject {
 
     public TrackLine(int x, int y, Color color, GraphicsContext gc, int trackLength) {
         super(x, y, color, gc);
-        //this.trackOffset = trackOffset;
         this.trackLength = trackLength;
     }
 

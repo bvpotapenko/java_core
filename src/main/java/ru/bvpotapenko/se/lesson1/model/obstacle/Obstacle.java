@@ -33,7 +33,6 @@ public class Obstacle extends AbstractTrackObject {
         switch(state) {
             case READY:
                 getGraphicsContext().setFill(getColor());
-                System.out.println("USING COLOR: " + getColor().getClass().getSimpleName());
                 break;
             case PASSED:
                 getGraphicsContext().setFill(passedColor);
