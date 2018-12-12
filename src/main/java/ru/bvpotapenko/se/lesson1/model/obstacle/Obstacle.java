@@ -44,4 +44,16 @@ public class Obstacle extends AbstractTrackObject {
         getGraphicsContext().fillRect(getX(), getY() - obstacleHeight * OBSTACLE_HEIGHT_MULTIPLIER,
                 OBSTACLE_WIDTH, obstacleHeight * OBSTACLE_HEIGHT_MULTIPLIER);
     }
+
+    public int getObstacleHeight() {
+        return obstacleHeight;
+    }
+
+    public int getOBSTACLE_WIDTH() {
+        return OBSTACLE_WIDTH;
+    }
+
+    public int getOBSTACLE_HEIGHT_MULTIPLIER() {
+        return OBSTACLE_HEIGHT_MULTIPLIER;
+    }
 }

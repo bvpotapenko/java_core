@@ -7,6 +7,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.BorderPane?>
 
+<?import javafx.scene.Group?>
 <BorderPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="ru.bvpotapenko.se.lesson1.controller.Controller">
     <top>
@@ -21,7 +22,11 @@
         </TableView>
     </top>
     <center>
-        <Canvas fx:id="canvas" height="250.0" width="400.0" BorderPane.alignment="CENTER"/>
+         <Group fx:id="group" BorderPane.alignment="CENTER">
+            <children>
+                <Canvas fx:id="canvas" height="250.0" width="400.0" BorderPane.alignment="CENTER"/>
+            </children>
+        </Group>
     </center>
     <bottom>
         <ToolBar minHeight="50.0" minWidth="400.0" BorderPane.alignment="CENTER">

@@ -1,10 +1,13 @@
 package ru.bvpotapenko.se.lesson1.controller;
 
+import javafx.animation.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.Group;
+import javafx.scene.Node;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
@@ -12,6 +15,8 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
+import javafx.util.Duration;
 import ru.bvpotapenko.se.lesson1.console.Course;
 import ru.bvpotapenko.se.lesson1.console.TeamMember;
 import ru.bvpotapenko.se.lesson1.model.TeamMemberToken;
@@ -31,6 +36,8 @@ public class Controller implements Initializable {
     private Button newTeamButton;
     @FXML
     private Canvas canvas;
+    @FXML
+    private Group group;
     @FXML
     private TableView tableView;
     @FXML
@@ -65,7 +72,6 @@ public class Controller implements Initializable {
         powerColumn.setCellValueFactory(new PropertyValueFactory<TeamMember, String>("power"));
 
         tableView.setItems(teamMemberData);
-
         drawTeam();
     }
 
@@ -87,7 +93,6 @@ public class Controller implements Initializable {
         tableView.getItems().remove(0, 4);
         tableView.setItems(teamMemberData);
         drawTeam();
-
     }
 
     private void drawCourse() {
@@ -101,43 +106,61 @@ public class Controller implements Initializable {
         }
     }
 
+    public ObservableList<TeamMember> getTeamMemberData() {
+        return teamMemberData;
+    }
+
+    public List<TeamMemberToken> getTeamMemberTokenList() {
+        return teamMemberTokenList;
+    }
     private void drawTeam() { //fixme: Bad case of hardcode. Didn't manage to deal with the ObservableList
-        GraphicsContext gc = canvas.getGraphicsContext2D();
+        teamMemberTokenList.forEach(TeamMemberToken::removeToken);
         teamMemberTokenList.clear();
         for (int trackNumber = 0; trackNumber < TRACK_AMOUNT; trackNumber++) {
             TeamMember tm = teamMemberData.get(trackNumber);
             int track_Y = FIRST_TRACK_Y + DISTANCE_BETWEEN_TRACKS * trackNumber;
-            TeamMemberToken teamMemberToken = new TeamMemberToken(FIRST_TRACK_X, track_Y, Color.ORANGE, gc, tm);
+            TeamMemberToken teamMemberToken = new TeamMemberToken(FIRST_TRACK_X, track_Y, Color.ORANGE, tm, trackList.get(trackNumber), group);
             teamMemberTokenList.add(teamMemberToken);
             teamMemberToken.drawShape();
         }
     }
 
-    public void doIt(){
-        for (int i = 0; i < 4; i++){
-            int initX = trackList.get(i).getX();
-            int initY = trackList.get(i).getY();
-            int dx = 10;
-            int sleep = 50;
-            for (Obstacle o : trackList.get(i).getTrackObstacles().getObstacles()){
+    public void doIt() {
+        trackList.forEach(x -> animateTrack(x));
+    }
+        private void animateTrack(Track track){
+            List<TranslateTransition> translateList = new ArrayList<>();
+            for (Obstacle o : track.getTrackObstacles().getObstacles()){
                 int oX = o.getX();
                 int oY = o.getY();
-                //animate. A stupid way to animate. I should use scene graph
-                for (int curX = initX+dx; curX < oX; curX+=dx)
-                try{
-                    TeamMemberToken newToken = teamMemberTokenList.get(i);
-                    newToken.setColor(Color.WHITE);
-                    newToken.drawShape();
-                    newToken.setX(curX);
-                    newToken.setColor(Color.YELLOW);
-                    newToken.drawShape();
-                    Thread.sleep(sleep);
-                }catch(Exception e){
-                    e.printStackTrace();
-                }
+                System.out.println("Obstacle X: "+oX +"  Y: "+oY);
+                //animate.
+                TranslateTransition ttRun = new TranslateTransition(Duration.millis(450));
+                TranslateTransition ttJumpUp = new TranslateTransition(Duration.millis(250));
+                TranslateTransition ttJumpDown = new TranslateTransition(Duration.millis(250));
+                ttRun.setToX( oX-30);
+                System.out.println("RutTo: " + oX+" "+o.getOBSTACLE_WIDTH());
+               //ttJumpUp.setToY(oY-o.getObstacleHeight()*o.getOBSTACLE_HEIGHT_MULTIPLIER());
+                ttJumpUp.setToY(-o.getObstacleHeight()*o.getOBSTACLE_HEIGHT_MULTIPLIER());
+                System.out.println("JumpUpTo: " +oY+" "+o.getObstacleHeight()*o.getOBSTACLE_HEIGHT_MULTIPLIER());
+                ttJumpDown.setToY(0);
+                translateList.add(ttRun);
+                translateList.add(ttJumpUp);
+                translateList.add(ttJumpDown);
             }
-        }
+            TranslateTransition ttRun = new TranslateTransition(Duration.millis(450));
+            ttRun.setToX(340);
+            translateList.add(ttRun);
+            TeamMemberToken tokenToAnimate = teamMemberTokenList.stream()
+                    .filter(x -> track.equals(x.getTrack()))
+                    .findAny()
+                    .orElse(null);
+            SequentialTransition seqT = new SequentialTransition (
+                    tokenToAnimate.getStack(),
+                    translateList.toArray(new TranslateTransition[0]));
+            seqT.play();
     }
+
     /*private void drawSomething(GraphicsContext gc) {
 
         int obstaclesAmount = course.getObstacles().length;
@@ -164,20 +187,6 @@ public class Controller implements Initializable {
             }
         }
     }
+*/
 
-    private void drawStartFlag(GraphicsContext gc, int trackNumber){
-        gc.setFill(Color.GREEN);
-        gc.strokeLine(30, 30 + 60 * trackNumber, 30, 60 + 60 * trackNumber);
-        gc.fillRect(30, 30 + 60 * trackNumber, 20, 10);
-    }
-
-    private void drawFinishFlag(GraphicsContext gc, int trackNumber){
-        gc.setFill(Color.RED);
-        gc.strokeLine(370, 30 + 60 * trackNumber, 370, 60 + 60 * trackNumber);
-        gc.fillRect(350, 30 + 60 * trackNumber, 20, 10);
-    }
-
-    private void drawCourseLine(GraphicsContext gc, int trackNumber){
-        gc.strokeLine(30, 60 + 60 * trackNumber, 370, 60 + 60 * trackNumber);
-    }*/
 }
