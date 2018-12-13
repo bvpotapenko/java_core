@@ -10,6 +10,7 @@ public class TeamMember {
     private int stamina; //Overall performance ability on a course
     private int power; //Maximum obstacle without failing
     private final int number; //Unique personal number
+    private int failsMade;
 
     @Override
     public String toString() {
@@ -23,7 +24,8 @@ public class TeamMember {
         this.givenName = "Anonymous";
         this.familyName = getRandomString();
         this.stamina = random.nextInt(20)+10;
-        this.power = random.nextInt(8) + 3;
+        this.power = random.nextInt(7) + 3;
+        failsMade = 0;
         index++;
         number = index;
     }
@@ -33,6 +35,7 @@ public class TeamMember {
         this.familyName = familyName;
         this.stamina = stamina;
         this.power = power;
+        failsMade = 0;
         index++;
         number = index;
     }
@@ -60,6 +63,14 @@ public class TeamMember {
         return power;
     }
 
+    public int getFailsMade() {
+        return failsMade;
+    }
+
+    public void setFailsMade(int failsMade) {
+        this.failsMade = failsMade;
+    }
+
     //Make a random name
     private String getRandomString(){
         StringBuilder buffer = new StringBuilder(6);
@@ -79,5 +90,9 @@ public class TeamMember {
             buffer.append((char) randomLimitedInt);
         }
         return buffer.toString();
+    }
+
+    public void setStamina(int stamina) {
+        this.stamina = stamina;
     }
 }

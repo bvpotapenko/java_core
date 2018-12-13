@@ -1,12 +1,14 @@
 package ru.bvpotapenko.se.lesson1.console;
 
+import java.util.Arrays;
+
 public class Course {
     int[] obstacles;
     int maxFailsAllowed;
 
     public Course() {
         this.obstacles = new int []{1, 3, 2, 5, 4};
-        int maxFailsAllowed = 3;
+        maxFailsAllowed = 3;
     }
 
     public Course(int[] obstacles, int maxFailsAllowed) {
@@ -36,5 +38,18 @@ public class Course {
 
     public int[] getObstacles() {
         return obstacles;
+    }
+
+    public void generateRandomObstacles(){
+        for (int i = 0; i < 5; i++)
+            obstacles[i] = (int)(Math.random()*7);
+    }
+
+    @Override
+    public String toString() {
+        return "Course{" +
+                "obstacles=" + Arrays.toString(obstacles) +
+                ", maxFailsAllowed=" + maxFailsAllowed +
+                '}';
     }
 }

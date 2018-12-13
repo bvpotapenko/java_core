@@ -52,4 +52,8 @@ public class TeamMemberToken {
     public void removeToken(){
         group.getChildren().remove(stack);
     }
+
+    public TeamMember getTeamMember() {
+        return teamMember;
+    }
 }

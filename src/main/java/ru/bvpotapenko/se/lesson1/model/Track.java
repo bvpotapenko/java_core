@@ -56,4 +56,7 @@ public class Track {
     public int getY() {
         return y;
     }
+    public void clear(){
+
+    }
 }

@@ -10,13 +10,8 @@ public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception{
-        FXMLLoader loader = new FXMLLoader();
-        //Parent root = FXMLLoader.load(getClass().getResource("/main.fxml"));
-        loader.setLocation(getClass().getResource("/main.fxml"));
-        Parent root = loader.load();
-      //  Controller controller = loader.getController();
 
-       // RaceAnimator animator = new RaceAnimator((BorderPane)root, controller.getTeamMemberTokenList(), controller.getTeamMemberData());
+        Parent root = FXMLLoader.load(getClass().getResource("/main.fxml"));
 
         primaryStage.setTitle("The Race");
         primaryStage.setScene(new Scene(root));

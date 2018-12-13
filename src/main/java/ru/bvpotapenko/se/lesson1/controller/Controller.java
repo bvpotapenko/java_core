@@ -1,27 +1,30 @@
 package ru.bvpotapenko.se.lesson1.controller;
 
-import javafx.animation.*;
+import javafx.animation.FillTransition;
+import javafx.animation.SequentialTransition;
+import javafx.animation.TranslateTransition;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Group;
-import javafx.scene.Node;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.Circle;
 import javafx.util.Duration;
 import ru.bvpotapenko.se.lesson1.console.Course;
 import ru.bvpotapenko.se.lesson1.console.TeamMember;
 import ru.bvpotapenko.se.lesson1.model.TeamMemberToken;
 import ru.bvpotapenko.se.lesson1.model.Track;
 import ru.bvpotapenko.se.lesson1.model.obstacle.Obstacle;
+import ru.bvpotapenko.se.lesson1.model.obstacle.ObstacleState;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -64,12 +67,13 @@ public class Controller implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         initData();
-        drawCourse();
+        drawCourse(false);
 
         numberColumn.setCellValueFactory(new PropertyValueFactory<TeamMember, String>("number"));
         nameColumn.setCellValueFactory(new PropertyValueFactory<TeamMember, String>("fullName"));
         staminaColumn.setCellValueFactory(new PropertyValueFactory<TeamMember, String>("stamina"));
         powerColumn.setCellValueFactory(new PropertyValueFactory<TeamMember, String>("power"));
+        failsColumn.setCellValueFactory(new PropertyValueFactory<TeamMember, String>("failsMade"));
 
         tableView.setItems(teamMemberData);
         drawTeam();
@@ -86,8 +90,8 @@ public class Controller implements Initializable {
         teamMemberTokenList = new ArrayList<>(TRACK_AMOUNT);
     }
 
-
     public void generateNewTeam(ActionEvent event) {
+        drawCourse(true);
         for (int i = 0; i < 4; i++)
             teamMemberData.add(new TeamMember());
         tableView.getItems().remove(0, 4);
@@ -95,31 +99,27 @@ public class Controller implements Initializable {
         drawTeam();
     }
 
-    private void drawCourse() {
+    private void drawCourse(boolean isRandom) {
         GraphicsContext gc = canvas.getGraphicsContext2D();
+        gc.clearRect(0,0,400,400);
+        trackList.clear();
         gc.strokeText("START", 10, 20);
         gc.strokeText("FINISH", 350, 20);
-
+        if(isRandom) course.generateRandomObstacles();
         for (int trackNumber = 0; trackNumber < TRACK_AMOUNT; trackNumber++) {
             int track_Y = FIRST_TRACK_Y + DISTANCE_BETWEEN_TRACKS * trackNumber;
             trackList.add(new Track(TRACK_LENGTH, FIRST_TRACK_X, track_Y, gc, course));
         }
     }
 
-    public ObservableList<TeamMember> getTeamMemberData() {
-        return teamMemberData;
-    }
-
-    public List<TeamMemberToken> getTeamMemberTokenList() {
-        return teamMemberTokenList;
-    }
-    private void drawTeam() { //fixme: Bad case of hardcode. Didn't manage to deal with the ObservableList
+    private void drawTeam() {
         teamMemberTokenList.forEach(TeamMemberToken::removeToken);
         teamMemberTokenList.clear();
         for (int trackNumber = 0; trackNumber < TRACK_AMOUNT; trackNumber++) {
             TeamMember tm = teamMemberData.get(trackNumber);
             int track_Y = FIRST_TRACK_Y + DISTANCE_BETWEEN_TRACKS * trackNumber;
-            TeamMemberToken teamMemberToken = new TeamMemberToken(FIRST_TRACK_X, track_Y, Color.ORANGE, tm, trackList.get(trackNumber), group);
+            TeamMemberToken teamMemberToken =
+                    new TeamMemberToken(FIRST_TRACK_X, track_Y, Color.ORANGE, tm, trackList.get(trackNumber), group);
             teamMemberTokenList.add(teamMemberToken);
             teamMemberToken.drawShape();
         }
@@ -128,65 +128,66 @@ public class Controller implements Initializable {
     public void doIt() {
         trackList.forEach(x -> animateTrack(x));
     }
-        private void animateTrack(Track track){
-            List<TranslateTransition> translateList = new ArrayList<>();
-            for (Obstacle o : track.getTrackObstacles().getObstacles()){
-                int oX = o.getX();
-                int oY = o.getY();
-                System.out.println("Obstacle X: "+oX +"  Y: "+oY);
-                //animate.
-                TranslateTransition ttRun = new TranslateTransition(Duration.millis(450));
-                TranslateTransition ttJumpUp = new TranslateTransition(Duration.millis(250));
-                TranslateTransition ttJumpDown = new TranslateTransition(Duration.millis(250));
-                ttRun.setToX( oX-30);
-                System.out.println("RutTo: " + oX+" "+o.getOBSTACLE_WIDTH());
-               //ttJumpUp.setToY(oY-o.getObstacleHeight()*o.getOBSTACLE_HEIGHT_MULTIPLIER());
-                ttJumpUp.setToY(-o.getObstacleHeight()*o.getOBSTACLE_HEIGHT_MULTIPLIER());
-                System.out.println("JumpUpTo: " +oY+" "+o.getObstacleHeight()*o.getOBSTACLE_HEIGHT_MULTIPLIER());
-                ttJumpDown.setToY(0);
+
+    private void animateTrack(Track track) {
+        List<TranslateTransition> translateList = new ArrayList<>();
+        //Get a token for current track
+        TeamMemberToken tokenToAnimate = teamMemberTokenList.stream()
+                .filter(x -> track.equals(x.getTrack()))
+                .findAny()
+                .orElse(null);
+        TeamMember teamMember = tokenToAnimate.getTeamMember();
+        int failsOnTrack = 0;
+        int stamina = teamMember.getStamina();
+        for (Obstacle o : track.getTrackObstacles().getObstacles()) {
+            int oX = o.getX();
+            if(o.getObstacleHeight() > teamMember.getPower() || o.getObstacleHeight() > stamina ) {
+                failsOnTrack++;
+                o.setState(ObstacleState.FAILED);
+            }else o.setState(ObstacleState.PASSED);
+            //animate.
+            TranslateTransition ttRun = new TranslateTransition(Duration.millis(stamina > 1 ? 450*15/stamina : 0));
+            TranslateTransition ttJumpUp = new TranslateTransition(Duration.millis(stamina > 1 ? 250*15/stamina : 0));
+            TranslateTransition ttJumpDown = new TranslateTransition(Duration.millis(stamina > 1 ? 250*15/stamina : 0));
+            ttRun.setToX(oX - 30);
+            int jumpHeight = getMin(stamina, teamMember.getPower());
+            ttJumpUp.setToY(-1 * jumpHeight*o.getOBSTACLE_HEIGHT_MULTIPLIER());
+            ttJumpDown.setToY(0);
+
+            if(stamina >0 ) {
                 translateList.add(ttRun);
                 translateList.add(ttJumpUp);
                 translateList.add(ttJumpDown);
             }
-            TranslateTransition ttRun = new TranslateTransition(Duration.millis(450));
-            ttRun.setToX(340);
-            translateList.add(ttRun);
-            TeamMemberToken tokenToAnimate = teamMemberTokenList.stream()
-                    .filter(x -> track.equals(x.getTrack()))
-                    .findAny()
-                    .orElse(null);
-            SequentialTransition seqT = new SequentialTransition (
-                    tokenToAnimate.getStack(),
-                    translateList.toArray(new TranslateTransition[0]));
-            seqT.play();
-    }
-
-    /*private void drawSomething(GraphicsContext gc) {
-
-        int obstaclesAmount = course.getObstacles().length;
-        
-        for (int i = 0; i < 4; i++) {
-
-            drawStartFlag(gc, i);
-            drawFinishFlag(gc, i);
-            drawCourseLine(gc, i);
-
-            //Add obstacles
-            gc.setFill(Color.BURLYWOOD);
-
-            for (int k = 0; k < obstaclesAmount; k++) {
-                //тут надо что-то с координатами
-                //иначе потом будет сложно перерисовывать
-                //сохраняем координаты в массив
-                int distanceBetweenObstacles = (340-30)/(obstaclesAmount+1);
-                obstaclesPosition[k] = distanceBetweenObstacles*(k+1) + 30;
-                gc.fillRect(obstaclesPosition[k],
-                        60 + 60 * i - (course.getObstacles()[k]) * 5,
-                        10,
-                        course.getObstacles()[k] * 5);
-            }
+            stamina -= o.getObstacleHeight() - teamMember.getPower()/4; //Fatigue simulator
         }
-    }
-*/
+        //updating a table with fails and stamina
+        teamMember.setFailsMade(failsOnTrack);
+        teamMember.setStamina(stamina);
+        int index = teamMemberData.indexOf(teamMember);
+        teamMemberData.set(index, teamMember);
+        tableView.refresh();
 
+        //run extra mile
+        TranslateTransition ttRun = new TranslateTransition(Duration.millis(stamina > 1 ? 450*10/stamina : 0));
+        ttRun.setToX(320);
+        if (stamina > 0) translateList.add(ttRun);
+        SequentialTransition seqT = new SequentialTransition(
+                tokenToAnimate.getStack(),
+                translateList.toArray(new TranslateTransition[0]));
+        //Set color for winners and losers
+        FillTransition ft = new FillTransition(Duration.millis(200));
+        ft.setFromValue(Color.YELLOW);
+        ft.setShape((Circle)tokenToAnimate.getStack().getChildren().get(0));
+        if(failsOnTrack <= course.getMaxFailsAllowed() && stamina > 0)
+            ft.setToValue(Color.GREEN);
+        else
+            ft.setToValue(Color.RED);
+        seqT.getChildren().add(ft);
+        seqT.play();
+    }
+
+    private int getMin(int a, int b){
+        return a < b ? a : b;
+    }
 }
