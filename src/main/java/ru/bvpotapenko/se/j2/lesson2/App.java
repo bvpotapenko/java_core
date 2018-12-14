@@ -5,6 +5,7 @@ import ru.bvpotapenko.se.j2.lesson2.exception.MyArraySizeException;
 
 import java.text.MessageFormat;
 import java.util.Arrays;
+import java.util.stream.Collectors;
 
 /**
  * Java.core, Lesson 2.
@@ -62,10 +63,12 @@ public class App {
         for (int i = 0; i < sArr.length; i++) {
             for (int j = 0; j < sArr[i].length; j++) {
                 try {
+                    if(sArr[i][j] == null){
+                        String errMsg = MessageFormat.format(MADE_NULL_VALUE, i, j);
+                        throw new MyArrayDataException(errMsg);
+                    }
                     sum += Integer.parseInt(sArr[i][j]);
-                } catch (NullPointerException e) {
-                    String errMsg = MessageFormat.format(MADE_NULL_VALUE, i, j);
-                    throw new MyArrayDataException(e, errMsg);
+
                 } catch (IllegalArgumentException e) {
                     String errMsg = MessageFormat.format(MADE_ILLEGAL_VALUE, i, j);
                     throw new MyArrayDataException(e, errMsg);
@@ -99,13 +102,10 @@ public class App {
     }
 
     static void printArr(String[][] sArr) {
-        StringBuilder result = new StringBuilder();
-        for (int i = 0; i < sArr.length; i++) {
-            for (int j = 0; j < sArr[i].length; j++) {
-                result.append(sArr[i][j]).append(", ");
-            }
-            result.append("\n");
-        }
+        String result = Arrays.stream(sArr).map(
+                subArr -> Arrays.stream(subArr)
+                        .collect(Collectors.joining(",", "[", "]")))
+                .collect(Collectors.joining(System.lineSeparator()));
         System.out.println(result);
         System.out.println();
     }
