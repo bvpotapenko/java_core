@@ -1,81 +1,33 @@
 package ru.bvpotapenko.se.collections;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
+import ru.bvpotapenko.se.collections.util.StringMaker;
 
-/**
- * Hello world!
- *
- */
-public class App
-{
-    public static void main( String[] args )
-    {
-        ArrayList<Integer> arrayList = new ArrayList<>();
-        LinkedList<Integer> linkedList = new LinkedList<>();
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
-// ArrayList add
-        long startTime = System.nanoTime();
-
-        for (int i = 0; i < 100000; i++) {
-            arrayList.add(i);
-        }
-        long endTime = System.nanoTime();
-        long duration = endTime - startTime;
-        System.out.println("ArrayList add:  " + duration);
-
-// LinkedList add
-        startTime = System.nanoTime();
-
-        for (int i = 0; i < 100000; i++) {
-            linkedList.add(i);
-        }
-        endTime = System.nanoTime();
-        duration = endTime - startTime;
-        System.out.println("LinkedList add: " + duration);
-
-// ArrayList get
-        startTime = System.nanoTime();
-
-        for (int i = 0; i < 10000; i++) {
-            arrayList.get(i);
-        }
-        endTime = System.nanoTime();
-        duration = endTime - startTime;
-        System.out.println("ArrayList get:  " + duration);
-
-// LinkedList get
-        startTime = System.nanoTime();
-
-        for (int i = 0; i < 10000; i++) {
-            linkedList.get(i);
-        }
-        endTime = System.nanoTime();
-        duration = endTime - startTime;
-        System.out.println("LinkedList get: " + duration);
+public class App {
+    public static void main(String[] args) {
+        countStrings_task_1();
 
 
-
-// ArrayList remove
-        startTime = System.nanoTime();
-
-        for (int i = 9999; i >=0; i--) {
-            arrayList.remove(i);
-        }
-        endTime = System.nanoTime();
-        duration = endTime - startTime;
-        System.out.println("ArrayList remove:  " + duration);
-
-
-
-// LinkedList remove
-        startTime = System.nanoTime();
-
-        for (int i = 9999; i >=0; i--) {
-            linkedList.remove(i);
-        }
-        endTime = System.nanoTime();
-        duration = endTime - startTime;
-        System.out.println("LinkedList remove: " + duration);
     }
+
+    public static void countStrings_task_1(){
+        //fill an array with clones under certain probability (int itemsAmount, int stringLength, double cloneProbability)
+        String[] sArr = StringMaker.fillArrayWithProbableClones(20, 6, 0.3);
+        System.out.println("Initial array:");
+        System.out.println(Arrays.toString(sArr));
+
+        //fill a HashMap with strings counting their clones
+        Map<String, Integer> map = Arrays.stream(sArr)
+                .collect(Collectors.toMap(s -> s, s -> 1, //set a string from the array as a key, and 1 as a value
+                        (oldValue, newValue) -> oldValue + 1, //a merge function for doubles
+                        HashMap::new)); //a supplier
+        System.out.println(map.toString());
+    }
+
+
 }
