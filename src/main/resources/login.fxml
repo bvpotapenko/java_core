@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.layout.HBox?>
+
+<VBox alignment="TOP_CENTER" spacing="10.0" styleClass="vbox" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ru.bvpotapenko.se.chatui.ui.controller.LoginController">
+   <children>
+      <TextField fx:id="loginTextField" promptText="Login" />
+      <TextField fx:id="passwordTextField" promptText="Password" />
+      <Button fx:id="loginButton" mnemonicParsing="false" onAction="#login" text="Login" />
+   </children>
+   <padding>
+      <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+   </padding>
+</VBox>
