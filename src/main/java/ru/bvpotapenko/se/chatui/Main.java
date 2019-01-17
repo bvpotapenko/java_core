@@ -7,8 +7,10 @@ import javafx.scene.Scene;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import ru.bvpotapenko.se.chatui.server.Server;
 import ru.bvpotapenko.se.chatui.ui.controller.ChatWindowController;
 import ru.bvpotapenko.se.chatui.ui.controller.LoginController;
+
 
 public class Main extends Application {
 
@@ -42,6 +44,6 @@ public class Main extends Application {
     }
 
     public static void main(String[] args) {
-        launch(args);
+         launch(args);
     }
 }
