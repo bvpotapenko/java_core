@@ -32,6 +32,9 @@ public class ChatServerClient implements Runnable {
                 // FIXME: 21-Jan-19 use JSON objects for messages
                 Map<String, String> parsedMessage = parseMessage(message);
                 if (parsedMessage == null) continue;
+                System.out.println("LOG: \ncommand: " + parsedMessage.get("command") + "\n" +
+                                    "user: " + parsedMessage.get("user") + "\n" +
+                                    "message: " + parsedMessage.get("message"));
                 switch (parsedMessage.get("command")) {
                     case "name":
                         clientName = parsedMessage.get("message");
@@ -39,6 +42,7 @@ public class ChatServerClient implements Runnable {
                             sendMessage("/auth_ok");
                         break;
                     case "broadcast":
+                        System.out.println("LOG case fired: \"broadcast\"");
                         server.sendBroadcast(clientName, parsedMessage.get("message"));
                         break;
                     case "u":
@@ -56,13 +60,13 @@ public class ChatServerClient implements Runnable {
 
     private Map<String, String> parseMessage(String message) {
         if (message == null || message.isEmpty()) return null;
-
+        System.out.println("LOG message to parse: " + message);
         Map<String, String> parsedMessage = new HashMap<>();
 
         Pattern pattern = Pattern.compile(
                 "^[/](?<commandPrefix>\\w+)[&](?<commandSuffix>\\w+)\\s(?<mess1>.+)|" +
                         "^[/](?<comm>\\w+)\\s(?<mess2>.+)|" +
-                        "^[^/]+(?<mess3>.+)",
+                        "^(?<mess3>[^/].*)",
                 Pattern.CASE_INSENSITIVE);
         Matcher matcher = pattern.matcher(message);
         if (matcher.find()) {
@@ -85,8 +89,9 @@ public class ChatServerClient implements Runnable {
         try {
             socketWriter.write(message + "\n");
             socketWriter.flush();
+            System.out.println("LOG message sent: " + message);
         } catch (IOException e) {
-            System.err.println("Server error: " + e.getMessage());
+            System.err.println("Server send message error: " + e.getMessage());
             e.printStackTrace();
         }
     }

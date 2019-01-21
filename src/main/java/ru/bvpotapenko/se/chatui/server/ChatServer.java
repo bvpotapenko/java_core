@@ -53,14 +53,17 @@ public class ChatServer implements Runnable {
     }
 
     public synchronized void sendBroadcast(String sender, String message) {
+        System.out.println("LOG has a BCast message: " + message + "\nfrom: " + sender);
         clients.forEach((name, client) -> {
-            if (!name.equalsIgnoreCase(sender))
-                client.sendMessage(message);
+            if (!name.equalsIgnoreCase(sender)) {
+                client.sendMessage(sender + ": " + message);
+                System.out.println("LOG ChatServer sends a broadcast message to: " + name);
+            }
         });
     }
 
     public synchronized void sendPrivateMessage(String sender, String receiverName, String message) {
-        clients.get(receiverName).sendMessage("Privately from " + sender + ": "+ message);
+        clients.get(receiverName).sendMessage("PM from " + sender + ": "+ message);
     }
 
     private void close() throws IOException {

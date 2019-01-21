@@ -32,6 +32,7 @@ public class Client implements Runnable {
     public void sendMessage(String message) {
         if (socketState == ClientState.CONNECTED) {
             if (message == null || message.isEmpty()) return;
+            System.out.println("LOG client is ready to send Quiet Message: " + message);
             sendQuietMessage(message);
             outPrintStream.println(clientName + ": " + message + "\n");
         }
@@ -44,6 +45,7 @@ public class Client implements Runnable {
             try {
                 socketWriter.write(message + "\n");
                 socketWriter.flush();
+                System.out.println("LOG quiet message was sent from client: " + message);
             } catch (IOException e) {
                 System.err.println("Message send error: " + e.getMessage());
                 e.printStackTrace();
@@ -54,13 +56,19 @@ public class Client implements Runnable {
     @Override
     public void run() {
         try {
+            System.out.println("LOG client socket is listening");
             while (socketState == ClientState.CONNECTED) {
                 String message = socketReader.readLine();
+                System.out.println("LOG client received a message: " + message);
                 if (message == null) continue;
-                if (!isUserAuthorized && message.startsWith("/auth_ok")) // FIXME: 21-Jan-19 test \n character in the end
+                if (message.startsWith("/auth_ok")) { // FIXME: 21-Jan-19 test \n character in the end
                     isUserAuthorized = true;
+                    System.out.println("LOG client auth confirmed");
+                    continue;
+                }
                 outPrintStream.println(message);
             }
+            System.out.println("LOG client socket stopped listening");
         } catch (IOException e) {
             System.err.println("Client error: " + e.getMessage());
             e.printStackTrace();

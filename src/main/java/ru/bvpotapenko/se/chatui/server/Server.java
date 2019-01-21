@@ -9,7 +9,10 @@ public class Server {
     public static void main(String[] args) {
         ChatServer server = new ChatServer(Properties.PORT);
         new Thread(server).start();
-        System.out.println("Server started, press \"q\" for exit or \"r\" to restart");
+        System.out.println("Server started, press: " +
+                "\n\"q\" for exit " +
+                "\n\"r\" to restart" +
+                "\nul for a user list");
         Scanner scanner = new Scanner(System.in);
         String command = "";
         while (!"q".equalsIgnoreCase(command)) {
@@ -29,7 +32,10 @@ public class Server {
                     break;
                 default:
                     System.out.println("Unknown command: " + command);
-                    System.out.println("press \"q\" for exit or \"r\" to restart");
+                    System.out.println("press: " +
+                            "\n\"q\" for exit " +
+                            "\n\"r\" to restart" +
+                            "\nul for a user list");
             }
         }
     }
