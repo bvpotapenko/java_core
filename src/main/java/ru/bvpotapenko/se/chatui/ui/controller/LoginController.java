@@ -2,22 +2,22 @@ package ru.bvpotapenko.se.chatui.ui.controller;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.Initializable;
-import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
-import ru.bvpotapenko.se.chatui.network.GenericSocketHandler;
+import ru.bvpotapenko.se.chatui.network.Client;
 
 import java.net.URL;
 import java.util.ResourceBundle;
 
-public class LoginController implements Initializable {
+public class LoginController implements Initializable, PrimaryStageAware {
     private Scene mainChatScene;
     public TextField loginTextField;
     public TextField passwordTextField;
     public Button loginButton;
-    private GenericSocketHandler socket;
+    private Stage primaryStage;
+    private Client client;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -25,11 +25,12 @@ public class LoginController implements Initializable {
     }
 
     public void login(ActionEvent event) {
-        GenericSocketHandler.authorize(loginTextField.getText(), passwordTextField.getText());
-        if (GenericSocketHandler.isUserAuthorized())
-            new Thread(socket).start();
+        client.authorize(loginTextField.getText(), passwordTextField.getText());
+        if (client.isUserAuthorized()) {
+            new Thread(client).start();
+            primaryStage.setTitle("Chat | " + loginTextField.getText());
+        }
         clearText();
-        Stage primaryStage = (Stage) ((Node) event.getSource()).getScene().getWindow();
         primaryStage.setScene(mainChatScene);
     }
 
@@ -42,11 +43,12 @@ public class LoginController implements Initializable {
         this.mainChatScene = mainChatScene;
     }
 
-    public void quit(ActionEvent event) {
-        System.exit(0);
+    public void setClient(Client client) {
+        this.client = client;
     }
 
-    public void setSocket(GenericSocketHandler socket) {
-        this.socket = socket;
+    @Override
+    public void setPrimaryStage(Stage primaryStage) {
+        this.primaryStage = primaryStage;
     }
 }
