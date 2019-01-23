@@ -1,22 +1,22 @@
 package ru.bvpotapenko.se.chatui.server;
 
-import ru.bvpotapenko.se.chatui.utils.Properties;
+import ru.bvpotapenko.se.chatui.server.Exceptions.AuthFailException;
+import ru.bvpotapenko.se.chatui.server.Exceptions.AuthNameDoubled;
+import ru.bvpotapenko.se.chatui.server.filters.ChatFilter;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 /*Handles all the connections from clients*/
 public class ChatServer implements Runnable {
     private ServerSocket serverSocket;
-    // TODO: 20-Jan-19 translate to Map
     private Map<String, ChatServerClient> clients = new ConcurrentHashMap<>();
+    private List<ChatFilter> filters;
 
     public enum ChatServerState {
         ON,
@@ -59,17 +59,18 @@ public class ChatServer implements Runnable {
     }
 
     public synchronized void sendBroadcast(String sender, String message) {
-        System.out.println("LOG has a BCast message: " + message + "\nfrom: " + sender);
+        final String filteredMessage = filter(message);
         clients.forEach((name, client) -> {
             if (!name.equalsIgnoreCase(sender)) {
-                client.sendMessage(sender + ": " + message);
+                client.sendMessage(sender + ": " + filteredMessage);
                 System.out.println("LOG ChatServer sends a broadcast message to: " + name);
             }
         });
     }
 
     public synchronized void sendPrivateMessage(String sender, String receiverName, String message) {
-        clients.get(receiverName).sendMessage("PM from " + sender + ": "+ message);
+        final String filteredMessage = filter(message);
+        clients.get(receiverName).sendMessage("PM from " + sender + ": " + filteredMessage);
     }
 
     private void close() throws IOException {
@@ -102,13 +103,13 @@ public class ChatServer implements Runnable {
         }
     }
 
-    public List<String> getUserList(){
+    public List<String> getUserList() {
         return new ArrayList(clients.keySet());
     }
 
-    public List<String> getUserListState(){
+    public List<String> getUserListState() {
         List<String> userListState = new ArrayList<>();
-        for (Map.Entry<String, ChatServerClient> userEntry: clients.entrySet()){
+        for (Map.Entry<String, ChatServerClient> userEntry : clients.entrySet()) {
             String user = userEntry.getKey() +
                     " - " +
                     userEntry.getValue().isAuthorized();
@@ -117,20 +118,31 @@ public class ChatServer implements Runnable {
         return userListState;
     }
 
-    public synchronized void removeClient(ChatServerClient client){
-        try{
+    public synchronized void removeClient(ChatServerClient client) {
+        try {
             clients.remove(client.getClientName());
             client.stop();
-        }catch (Exception e){
+        } catch (Exception e) {
             System.err.println("Server remove client error: " + e.getMessage());
             e.printStackTrace();
         }
     }
-    public synchronized void addClient(String clientName, ChatServerClient client) {
+
+    public synchronized void addClient(String clientName, ChatServerClient client) throws AuthFailException {
         if (clients.containsKey(clientName)) {
-            removeClient(client);
+            throw new AuthNameDoubled(clientName);
         }
         clients.put(clientName, client);
         sendBroadcast("", "New user: " + clientName + " joined.");
+    }
+
+    public void addFilter(ChatFilter filter) {
+        filters.add(filter);
+        System.out.println("Filter is added!");
+    }
+    private String filter(String message){
+        for (ChatFilter filter: filters)
+            message = filter.filter(message);
+        return message;
     }
 }

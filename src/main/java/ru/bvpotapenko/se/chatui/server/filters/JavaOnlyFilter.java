@@ -3,7 +3,7 @@ package ru.bvpotapenko.se.chatui.server.filters;
 import java.util.LinkedList;
 import java.util.List;
 
-public class JavaOnlyFilter implements ChatFIlter {
+public class JavaOnlyFilter implements ChatFilter {
     List<String> censuredList;
 
     public JavaOnlyFilter(){

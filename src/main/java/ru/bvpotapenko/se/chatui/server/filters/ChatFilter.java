@@ -1,5 +1,5 @@
 package ru.bvpotapenko.se.chatui.server.filters;
 
-public interface ChatFIlter {
+public interface ChatFilter {
     String filter(String message);
 }
