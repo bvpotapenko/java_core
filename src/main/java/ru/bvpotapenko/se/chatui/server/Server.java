@@ -7,7 +7,7 @@ import java.util.Scanner;
 
 public class Server {
     public static void main(String[] args) {
-        ChatServer server = new ChatServer(Properties.PORT);
+        ChatServer server = new ChatServer(Properties.PORT, "chat.db");
         new Thread(server).start();
         System.out.println("Server started, press: " +
                 "\n\"q\" for exit " +

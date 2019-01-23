@@ -11,8 +11,8 @@ public class Client implements Runnable {
     private Socket socket;
     private String clientName;
 
-    private BufferedReader socketReader;
-    private BufferedWriter socketWriter;
+    private DataInputStream socketReader;
+    private DataOutputStream socketWriter;
     private PrintStream outPrintStream;
 
     public Client(String host, int port) {
@@ -21,8 +21,8 @@ public class Client implements Runnable {
             socketState = ClientState.CONNECTING;
             socket = new Socket(host, port);
             socketState = ClientState.CONNECTED;
-            socketReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            socketWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+            socketReader = new DataInputStream(socket.getInputStream());
+            socketWriter = new DataOutputStream(socket.getOutputStream());
         } catch (IOException e) {
             socketState = ClientState.DISCONNECTED;
             System.err.println(MessageFormat.format("Can\'t connect to Socket: {0}:{1}", host, port));
@@ -43,7 +43,7 @@ public class Client implements Runnable {
         if (socketState == ClientState.CONNECTED) {
             if (message == null || message.isEmpty()) return;
             try {
-                socketWriter.write(message + "\n");
+                socketWriter.writeUTF(message + "\n");
                 socketWriter.flush();
                 System.out.println("LOG quiet message was sent from client: " + message);
             } catch (IOException e) {
@@ -58,10 +58,9 @@ public class Client implements Runnable {
         try {
             System.out.println("LOG client socket is listening");
             while (socketState == ClientState.CONNECTED) {
-                String message = socketReader.readLine();
+                String message = socketReader.readUTF();
                 System.out.println("LOG client received a message: " + message);
-                if (message == null) continue;
-                if (message.startsWith("/auth_ok")) { // FIXME: 21-Jan-19 test \n character in the end
+                if (message.startsWith("/auth_ok")) {
                     isUserAuthorized = true;
                     System.out.println("LOG client auth confirmed");
                     continue;
@@ -93,9 +92,9 @@ public class Client implements Runnable {
             clientName = login;
             new Thread(() -> {
                 while (!isUserAuthorized) {
-                    sendQuietMessage("/name " + clientName);
+                    sendQuietMessage("/auth " + clientName+"&"+password);
                     try {
-                        Thread.sleep(100);
+                        Thread.sleep(200);
                     } catch (InterruptedException e) {
                         System.err.println("Client auth error: " + e.getMessage());
                         e.printStackTrace();

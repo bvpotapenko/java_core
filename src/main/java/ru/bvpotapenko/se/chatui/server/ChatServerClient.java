@@ -10,9 +10,10 @@ import java.util.regex.Pattern;
 /*An entity of a connected client*/
 public class ChatServerClient implements Runnable {
 
-    private BufferedReader socketReader;
-    private BufferedWriter socketWriter;
+    private DataInputStream socketReader;
+    private DataOutputStream socketWriter;
     private ChatServer server;
+    private Socket socket;
 
     // FIXME: 21-Jan-19  must be implemented as UserService with DB connection
     private String clientName = "";
@@ -20,21 +21,42 @@ public class ChatServerClient implements Runnable {
 
     public ChatServerClient(Socket socket, ChatServer server) throws IOException {
         this.server = server;
-        socketReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        socketWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+        this.socket = socket;
+        socketReader = new DataInputStream(this.socket.getInputStream());
+        socketWriter = new DataOutputStream(this.socket.getOutputStream());
     }
 
     @Override
     public void run() {
+        if(!socket.isClosed()) {
+            waitForAuth();
+            waitForMessage();
+        }
+    }
+
+    private void waitForAuth(){
+        AuthService auth = new AuthService(server, this);
+        new Thread(auth).start();
+        while (!isAuthorized()){
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                System.err.println("Server client auth fail: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void waitForMessage(){
         try {
-            while (true) {
-                String message = socketReader.readLine();
+            while (socketReader.available() > 0) {
+                String message = socketReader.readUTF();
                 // FIXME: 21-Jan-19 use JSON objects for messages
                 Map<String, String> parsedMessage = parseMessage(message);
                 if (parsedMessage == null) continue;
                 System.out.println("LOG: \ncommand: " + parsedMessage.get("command") + "\n" +
-                                    "user: " + parsedMessage.get("user") + "\n" +
-                                    "message: " + parsedMessage.get("message"));
+                        "user: " + parsedMessage.get("user") + "\n" +
+                        "message: " + parsedMessage.get("message"));
                 switch (parsedMessage.get("command")) {
                     case "name":
                         clientName = parsedMessage.get("message");
@@ -48,6 +70,8 @@ public class ChatServerClient implements Runnable {
                     case "u":
                         server.sendPrivateMessage(clientName, parsedMessage.get("user"), parsedMessage.get("message"));
                         break;
+                    case "ul":
+                        sendMessage("Connected users: " + server.getUserList());
                     default:
                         server.sendPrivateMessage(clientName, clientName, "Unknown command");
                 }
@@ -64,10 +88,10 @@ public class ChatServerClient implements Runnable {
         Map<String, String> parsedMessage = new HashMap<>();
 
         Pattern pattern = Pattern.compile(
-                "^[/](?<commandPrefix>\\w+)[&](?<commandSuffix>\\w+)\\s(?<mess1>.+)|" +
+                        "^[/](?<commandPrefix>\\w+)[&](?<commandSuffix>\\w+([&]\\w+)*)\\s(?<mess1>.+)|" +
                         "^[/](?<comm>\\w+)\\s(?<mess2>.+)|" +
-                        "^(?<mess3>[^/].*)",
-                Pattern.CASE_INSENSITIVE);
+                        "^[/]\\w+([&](?<onlyCommand>[\\w\\d]+))" +
+                        "^(?<mess3>[^/].*)|");
         Matcher matcher = pattern.matcher(message);
         if (matcher.find()) {
             if (matcher.group("commandPrefix") != null) {
@@ -77,7 +101,9 @@ public class ChatServerClient implements Runnable {
             } else if (matcher.group("comm") != null) {
                 parsedMessage.put("command", matcher.group("comm"));
                 parsedMessage.put("message", matcher.group("mess2"));
-            } else {
+            } else if(matcher.group("onlyCommand") != null){
+
+            }else {
                 parsedMessage.put("command", "broadcast");
                 parsedMessage.put("message", matcher.group("mess3"));
             }
@@ -85,9 +111,9 @@ public class ChatServerClient implements Runnable {
         return parsedMessage;
     }
 
-    public void sendMessage(String message) {
+    public synchronized void sendMessage(String message) {
         try {
-            socketWriter.write(message + "\n");
+            socketWriter.writeUTF(message + "\n");
             socketWriter.flush();
             System.out.println("LOG message sent: " + message);
         } catch (IOException e) {
@@ -96,11 +122,13 @@ public class ChatServerClient implements Runnable {
         }
     }
 
-    public void stop() {
+    public synchronized void stop() {
         try {
+            socketWriter.writeUTF("/stop");
             socketReader.close();
             socketWriter.flush();
             socketWriter.close();
+            socket.close();
             Thread.currentThread().interrupt();
         } catch (IOException e) {
             System.err.println("Stop client error: " + e.getMessage());
@@ -108,15 +136,23 @@ public class ChatServerClient implements Runnable {
         }
     }
 
-    public String getClientName() {
+    public synchronized String getClientName() {
         return clientName;
     }
 
-    public void setAuthorized(boolean authorized) {
+    public synchronized void setAuthorized(boolean authorized) {
         isAuthorized = authorized;
     }
 
-    public boolean isAuthorized() {
+    public synchronized boolean isAuthorized() {
         return isAuthorized;
+    }
+
+    public boolean isUp() {
+        return socket.isClosed();
+    }
+
+    public DataInputStream getSocketReader() {
+        return socketReader;
     }
 }

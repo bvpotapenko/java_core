@@ -37,9 +37,9 @@ public class LoginController implements Initializable, PrimaryStageAware {
                 e.printStackTrace();
             }
         }
-        clearText();
-        primaryStage.setScene(mainChatScene);
         primaryStage.setTitle("Chat | " + loginTextField.getText());
+        primaryStage.setScene(mainChatScene);
+        clearText();
     }
 
     private void clearText() {

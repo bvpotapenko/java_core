@@ -1,7 +1,10 @@
 package ru.bvpotapenko.se.chatui.server;
 
+import ru.bvpotapenko.se.chatui.utils.Properties;
+
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -22,13 +25,17 @@ public class ChatServer implements Runnable {
 
     private ChatServerState serverState;
 
-    public ChatServer(int port) {
+    public ChatServer(int port, String dbName) {
         serverState = ChatServerState.OFF;
         try {
             serverSocket = new ServerSocket(port);
             serverState = ChatServerState.ON;
+            SQLHandler.connect(dbName);
         } catch (IOException e) {
             System.err.println("Server can\'t connect to port: " + port);
+            e.printStackTrace();
+        } catch (SQLException | ClassNotFoundException e) {
+            System.err.println("Server can\'t connect to the data base: " + dbName);
             e.printStackTrace();
         }
     }
@@ -38,9 +45,8 @@ public class ChatServer implements Runnable {
         while (serverState == ChatServerState.ON) {
             try {
                 ChatServerClient client = new ChatServerClient(serverSocket.accept(), this); // TODO: 20-Jan-19 process restart errors
-                AuthService auth = new AuthService(clients, client);
-                new Thread(auth).start();
                 new Thread(client).start();
+                new ClientTimeOutKiller(this, client);
             } catch (IOException e) {
                 if (serverState == ChatServerState.OFF) {
                     System.err.println("Connection terminated by a request: " + e.getMessage());
@@ -95,9 +101,11 @@ public class ChatServer implements Runnable {
             e.printStackTrace();
         }
     }
+
     public List<String> getUserList(){
         return new ArrayList(clients.keySet());
     }
+
     public List<String> getUserListState(){
         List<String> userListState = new ArrayList<>();
         for (Map.Entry<String, ChatServerClient> userEntry: clients.entrySet()){
@@ -107,5 +115,22 @@ public class ChatServer implements Runnable {
             userListState.add(user);
         }
         return userListState;
+    }
+
+    public synchronized void removeClient(ChatServerClient client){
+        try{
+            clients.remove(client.getClientName());
+            client.stop();
+        }catch (Exception e){
+            System.err.println("Server remove client error: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    public synchronized void addClient(String clientName, ChatServerClient client) {
+        if (clients.containsKey(clientName)) {
+            removeClient(client);
+        }
+        clients.put(clientName, client);
+        sendBroadcast("", "New user: " + clientName + " joined.");
     }
 }

@@ -48,9 +48,7 @@ public class Main extends Application {
 
         primaryStage.setTitle("Chat | Login");
         // FIXME: 21-Jan-19 handle close operation
-        primaryStage.setOnCloseRequest(e -> {
-           Platform.exit();
-        });
+        primaryStage.setOnCloseRequest(e -> Platform.exit());
         /*primaryStage.initStyle(StageStyle.TRANSPARENT);*/
         primaryStage.setResizable(false);
         primaryStage.setScene(loginScene);
