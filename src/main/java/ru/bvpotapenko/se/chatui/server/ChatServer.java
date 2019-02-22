@@ -63,7 +63,7 @@ public class ChatServer implements Runnable {
     }
 
     public synchronized void sendBroadcast(String sender, String message) {
-        final String filteredMessage = filter(message);
+        final String filteredMessage = clients.get(sender).getNick() + ": " + filter(message);
         System.out.println("sender: " + sender);
         System.out.println("LOG clients" + clients);
         clients.forEach((name, client) -> {
@@ -74,6 +74,21 @@ public class ChatServer implements Runnable {
         });
     }
 
+    public synchronized void sendBroadcastByNick(String senderNick, String message) {
+        String senderName = getNickByName(senderNick);
+        sendBroadcast(senderName, senderNick + ": " + message);
+    }
+
+    public String getNickByName(String name) {
+        for (Map.Entry<String, ChatServerClient> e : clients.entrySet()) {
+            if (e.getValue() != null
+                    && e.getValue().getClientName().equals(name)) {
+                return e.getValue().getNick();
+            }
+        }
+        return "";
+    }
+
     public synchronized void sendPrivateMessage(String sender, String receiverName, String message) {
         final String filteredMessage = filter(message);
         clients.get(receiverName).sendMessage("PM from " + clients.get(sender).getNick() + ": " + filteredMessage);
@@ -81,9 +96,9 @@ public class ChatServer implements Runnable {
 
     public synchronized void sendPrivateMessageByNick(String sender, String receiverNick, String message) {
         String receiverName;
-        for(Map.Entry<String, ChatServerClient> e: clients.entrySet()){
-            if(e.getValue() != null
-                    && e.getValue().getNick().equals(receiverNick)){
+        for (Map.Entry<String, ChatServerClient> e : clients.entrySet()) {
+            if (e.getValue() != null
+                    && e.getValue().getNick().equals(receiverNick)) {
                 receiverName = e.getValue().getClientName();
                 sendPrivateMessage(sender, receiverName, message);
             }
@@ -124,6 +139,7 @@ public class ChatServer implements Runnable {
     public List<String> getUserList() {
         return new ArrayList(clients.keySet());
     }
+
     public List<String> getNickList() {
         return new ArrayList(clients
                 .entrySet()
@@ -172,8 +188,9 @@ public class ChatServer implements Runnable {
         filters.add(filter);
         System.out.println("Filter is added!");
     }
-    private String filter(String message){
-        for (ChatFilter filter: filters)
+
+    private String filter(String message) {
+        for (ChatFilter filter : filters)
             message = filter.filter(message);
         return message;
     }

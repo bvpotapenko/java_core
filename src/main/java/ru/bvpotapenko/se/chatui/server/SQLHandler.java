@@ -36,7 +36,7 @@ public class SQLHandler {
                 "SELECT nickname FROM \"users\" WHERE login = ?");
         statement.setString(1, login);
         ResultSet rs = statement.executeQuery();
-        if(rs.next() && !"".equalsIgnoreCase(rs.getString("nickname"))){
+        if(rs.next() && !rs.getString("nickname").isEmpty()){
             return rs.getString("nickname");
         }
         return "NickNotSet_"+ login.hashCode();
@@ -46,7 +46,7 @@ public class SQLHandler {
                 "UPDATE users SET nickname =? WHERE login = ?");
         statement.setString(1, newNick);
         statement.setString(2, login);
-        statement.executeQuery();
+        statement.executeUpdate();
     }
 
     public static void close(){

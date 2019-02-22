@@ -81,10 +81,11 @@ public class ChatServerClient implements Runnable {
                         server.sendBroadcast(clientName, parsedMessage.get("message"));
                         break;
                     case "u":
-                        server.sendPrivateMessage(clientName, parsedMessage.get("user"), parsedMessage.get("message"));
+                        server.sendPrivateMessageByNick(clientName, parsedMessage.get("user"), parsedMessage.get("message"));
                         break;
                     case "ul":
                         sendMessage("Connected users: " + server.getNickList());
+                        break;
                     case "nick":
                         String newNick = parsedMessage.get("message");
                         if(newNick == null || newNick.isEmpty()){
@@ -110,7 +111,7 @@ public class ChatServerClient implements Runnable {
     }
 
     /**Commands examples:
-     * /u&nick_1&hello!
+     * /u&nick_1 hello!
      * /auth u1&B78F576611EC06F96AF3CA654C22172A5D746C40
      * /nick newNick
      */
@@ -123,8 +124,9 @@ public class ChatServerClient implements Runnable {
         Pattern pattern = Pattern.compile(
                         "^[/](?<commandPrefix>\\w+)[&](?<commandSuffix>\\w+([&]\\w+)*)\\s(?<mess1>.+)|" +
                         "^[/](?<comm>\\w+)\\s(?<mess2>.+)|" +
-                        "^[/]\\w+([&](?<onlyCommand>[\\w\\d]+))" +
-                        "^(?<mess3>[^/].*)|");
+                     //   "^[/]\\w+([&](?<onlyCommand>[\\w\\d]+))|" +
+                        "^[/](?<onlyCommand>[\\w\\d]+)|" +
+                        "^(?<mess3>[^/].*)");
         Matcher matcher = pattern.matcher(message);
         if (matcher.find()) {
             if (matcher.group("commandPrefix") != null) {
