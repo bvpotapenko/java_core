@@ -19,12 +19,12 @@ public class SQLHandler {
     public static boolean auth(String login, String passHash) throws SQLException {
         boolean isAuthOk = false;
         PreparedStatement statement = connection.prepareStatement(
-                "SELECT count(nick) FROM \"users\" WHERE login = ? AND password = ?");
+                "SELECT password FROM \"users\" WHERE login = ?");
         statement.setString(1, login);
-        statement.setString(2, passHash);
+        System.out.println("LOG DEBUG STEP-11: SQLHandler checks password ");
         ResultSet rs = statement.executeQuery();
 
-        if(rs.next() && rs.getInt("count(nick)") > 0){
+        if(rs.next() && rs.getString("password").equals(passHash)){
            isAuthOk = true;
         }
         System.out.println("LOG SQLHandler.auth: " + isAuthOk);
@@ -43,8 +43,9 @@ public class SQLHandler {
     }
     static void setClientNick(String login, String newNick)throws SQLException{
         PreparedStatement statement = connection.prepareStatement(
-                "UPDATE nickname FROM \"users\" WHERE login = ?");
-        statement.setString(1, login);
+                "UPDATE TABLE users SET nickname =? WHERE login = ?");
+        statement.setString(1, newNick);
+        statement.setString(2, login);
         statement.executeQuery();
     }
 

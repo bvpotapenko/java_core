@@ -2,6 +2,7 @@ package ru.bvpotapenko.se.chatui.network;
 
 import java.io.*;
 import java.net.Socket;
+import java.nio.charset.Charset;
 import java.text.MessageFormat;
 
 public class Client implements Runnable {
@@ -43,8 +44,13 @@ public class Client implements Runnable {
         if (socketState == ClientState.CONNECTED) {
             if (message == null || message.isEmpty()) return;
             try {
-                socketWriter.writeUTF(message + "\n");
-                socketWriter.flush();
+                /*socketWriter.writeUTF(message + "\n");
+                socketWriter.flush();*/
+                //We ensure the length of the message to parse on server side;
+                byte[] arbytes = message.getBytes(Charset.forName("UTF-8"));
+                socketWriter.writeInt(arbytes.length);
+                socketWriter.write(arbytes);
+
                 System.out.println("LOG quiet message was sent from client: " + message);
             } catch (IOException e) {
                 System.err.println("Message send error: " + e.getMessage());
@@ -94,7 +100,7 @@ public class Client implements Runnable {
                 while (!isUserAuthorized) {
                     sendQuietMessage("/auth " + clientName+"&"+password);
                     try {
-                        Thread.sleep(200);
+                        Thread.sleep(2000);
                     } catch (InterruptedException e) {
                         System.err.println("Client auth error: " + e.getMessage());
                         e.printStackTrace();

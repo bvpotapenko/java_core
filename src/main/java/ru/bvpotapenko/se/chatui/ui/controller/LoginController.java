@@ -34,13 +34,15 @@ public class LoginController implements Initializable, PrimaryStageAware {
         loginTextField.setDisable(true);
         passwordTextField.setDisable(true);
         loginButton.setDisable(true);
+
+        /* Decided to switch immediately
         while (!client.isUserAuthorized()) {
             try {
                 Thread.sleep(100);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-        }
+        }*/
         primaryStage.setTitle("Chat | " + loginTextField.getText());
         primaryStage.setScene(mainChatScene);
         clearText();

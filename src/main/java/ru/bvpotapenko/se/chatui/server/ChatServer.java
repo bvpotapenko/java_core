@@ -12,6 +12,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /*Handles all the connections from clients*/
 public class ChatServer implements Runnable {
@@ -45,7 +46,9 @@ public class ChatServer implements Runnable {
     public void run() {
         while (serverState == ChatServerState.ON) {
             try {
+                System.out.println("LOG DEBUG STEP-1: Wait for a client");
                 ChatServerClient client = new ChatServerClient(serverSocket.accept(), this); // TODO: 20-Jan-19 process restart errors
+                System.out.println("LOG DEBUG STEP-2: Client hooked up");
                 new Thread(client).start();
                 new ClientTimeOutKiller(this, client);
             } catch (IOException e) {
@@ -61,9 +64,11 @@ public class ChatServer implements Runnable {
 
     public synchronized void sendBroadcast(String sender, String message) {
         final String filteredMessage = filter(message);
+        System.out.println("sender: " + sender);
+        System.out.println("LOG clients" + clients);
         clients.forEach((name, client) -> {
             if (!name.equalsIgnoreCase(sender)) {
-                client.sendMessage(clients.get(sender).getNick() + ": " + filteredMessage);
+                client.sendMessage(filteredMessage);
                 System.out.println("LOG ChatServer sends a broadcast message to: " + name);
             }
         });
@@ -72,6 +77,17 @@ public class ChatServer implements Runnable {
     public synchronized void sendPrivateMessage(String sender, String receiverName, String message) {
         final String filteredMessage = filter(message);
         clients.get(receiverName).sendMessage("PM from " + clients.get(sender).getNick() + ": " + filteredMessage);
+    }
+
+    public synchronized void sendPrivateMessageByNick(String sender, String receiverNick, String message) {
+        String receiverName;
+        for(Map.Entry<String, ChatServerClient> e: clients.entrySet()){
+            if(e.getValue() != null
+                    && e.getValue().getNick().equals(receiverNick)){
+                receiverName = e.getValue().getClientName();
+                sendPrivateMessage(sender, receiverName, message);
+            }
+        }
     }
 
     private void close() throws IOException {
@@ -108,6 +124,13 @@ public class ChatServer implements Runnable {
     public List<String> getUserList() {
         return new ArrayList(clients.keySet());
     }
+    public List<String> getNickList() {
+        return new ArrayList(clients
+                .entrySet()
+                .stream()
+                .map(e -> e.getValue().getNick())
+                .collect(Collectors.toList()));
+    }
 
     public List<String> getUserListState() {
         List<String> userListState = new ArrayList<>();
@@ -130,18 +153,19 @@ public class ChatServer implements Runnable {
         }
     }
 
-    public synchronized void addClient(String clientName, ChatServerClient client) throws AuthFailException {
-        if (clients.containsKey(clientName)) {
-            throw new AuthNameDoubled(clientName);
+    public synchronized void addClient(ChatServerClient client) throws AuthFailException {
+        System.out.println("LOG DEBUG STEP-13: SERVER add client: " + client.getClientName());
+        if (clients.containsKey(client.getClientName())) {
+            throw new AuthNameDoubled(client.getClientName());
         }
-        System.out.println("LOG try ChatServer.addClient: " + clientName);
-        clients.put(clientName, client);
+        System.out.println("LOG try ChatServer.addClient: " + client.getClientName());
+        clients.put(client.getClientName(), client);
         try {
-            client.setNick(SQLHandler.getClientNick(clientName));
+            client.setNick(SQLHandler.getClientNick(client.getClientName()));
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        sendBroadcast("", "New user: " + client.getNick() + " joined.");
+        sendBroadcast(client.getClientName(), "New user: " + client.getNick() + " joined.");
     }
 
     public void addFilter(ChatFilter filter) {

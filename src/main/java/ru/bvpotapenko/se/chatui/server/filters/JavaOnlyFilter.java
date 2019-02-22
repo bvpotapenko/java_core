@@ -14,6 +14,7 @@ public class JavaOnlyFilter implements ChatFilter {
     }
     @Override
     public String filter(String message) {
+        if(message == null) return "";
         for(String word: censuredList){
             message = message.replaceAll(word, "JAVA");
         }

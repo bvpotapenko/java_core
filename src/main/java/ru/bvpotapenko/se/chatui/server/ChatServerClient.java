@@ -3,6 +3,7 @@ package ru.bvpotapenko.se.chatui.server;
 import java.io.*;
 import java.net.Socket;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -30,14 +31,18 @@ public class ChatServerClient implements Runnable {
     @Override
     public void run() {
         if(!socket.isClosed()) {
+            System.out.println("LOG DEBUG STEP-3: A client tries to auth");
             waitForAuth();
+            System.out.println("LOG DEBUG STEP-FINAL: A client is ready");
             waitForMessage();
         }
     }
 
     private void waitForAuth(){
         AuthService auth = new AuthService(server, this);
+        System.out.println("LOG DEBUG STEP-4: A client starts auth service");
         new Thread(auth).start();
+        System.out.println("LOG DEBUG STEP-4.afterAuthStart: A client sleeps for auth");
         while (!isAuthorized()){
             try {
                 Thread.sleep(50);
@@ -46,12 +51,19 @@ public class ChatServerClient implements Runnable {
                 e.printStackTrace();
             }
         }
+        sendMessage("/auth_ok");
     }
 
     private void waitForMessage(){
         try {
-            while (socketReader.available() > 0) {
-                String message = socketReader.readUTF();
+            while (true) {
+                System.out.println("LOG CSClient waits for a message");
+                //String message = socketReader.readUTF();
+                byte[] arbytes = new byte[socketReader.readInt()];
+                for(int i = 0; i < arbytes.length; i++){
+                    arbytes[i] = socketReader.readByte();
+                }
+                String message = new String(arbytes);
                 // FIXME: 21-Jan-19 use JSON objects for messages
                 Map<String, String> parsedMessage = parseMessage(message);
                 if (parsedMessage == null) continue;
@@ -60,9 +72,9 @@ public class ChatServerClient implements Runnable {
                         "message: " + parsedMessage.get("message"));
                 switch (parsedMessage.get("command")) {
                     case "name":
-                        clientName = parsedMessage.get("message");
+                        //clientName = parsedMessage.get("message");
                         if (isAuthorized)
-                            sendMessage("/auth_ok");
+                            sendMessage("/auth_ok " + clientName);
                         break;
                     case "broadcast":
                         System.out.println("LOG case fired: \"broadcast\"");
@@ -72,7 +84,7 @@ public class ChatServerClient implements Runnable {
                         server.sendPrivateMessage(clientName, parsedMessage.get("user"), parsedMessage.get("message"));
                         break;
                     case "ul":
-                        sendMessage("Connected users: " + server.getUserList());
+                        sendMessage("Connected users: " + server.getNickList());
                     case "nick":
                         String newNick = parsedMessage.get("message");
                         if(newNick == null || newNick.isEmpty()){
@@ -98,6 +110,7 @@ public class ChatServerClient implements Runnable {
     }
 
     /**Commands examples:
+     * /u&nick_1&hello!
      * /auth u1&B78F576611EC06F96AF3CA654C22172A5D746C40
      * /nick newNick
      */
@@ -123,9 +136,11 @@ public class ChatServerClient implements Runnable {
                 parsedMessage.put("message", matcher.group("mess2"));
             } else if(matcher.group("onlyCommand") != null){
                 parsedMessage.put("command", matcher.group("onlyCommand"));
-            }else {
+            }else if(matcher.group("mess3") != null){
                 parsedMessage.put("command", "broadcast");
                 parsedMessage.put("message", matcher.group("mess3"));
+            }else{
+                parsedMessage.put("command", "unknownCommand");
             }
         }
         return parsedMessage;
@@ -169,7 +184,7 @@ public class ChatServerClient implements Runnable {
     }
 
     public boolean isUp() {
-        return socket.isClosed();
+        return !socket.isClosed();
     }
 
     public DataInputStream getSocketReader() {
@@ -182,5 +197,9 @@ public class ChatServerClient implements Runnable {
 
     public void setNick(String nick) {
         this.nick = nick;
+    }
+
+    public void setClientName(String clientName) {
+        this.clientName = clientName;
     }
 }

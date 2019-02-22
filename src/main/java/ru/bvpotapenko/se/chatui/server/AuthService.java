@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,16 +25,29 @@ public class AuthService implements Runnable {
 
     @Override
     public void run() {
+        System.out.println("LOG DEBUG STEP-5: AUTH start");
         String clientCredentials = "";
+        System.out.println("client != null " + (client != null) +
+                "\nclient.isUp() " + client.isUp() +
+                "\n!client.isAuthorized()" + !client.isAuthorized());
         while (client != null && client.isUp() && !client.isAuthorized()) {
             try {
-                clientCredentials = client.getSocketReader().readUTF();
+                System.out.println("LOG DEBUG STEP-6: AUTH waits for login-pass");
+               // clientCredentials = client.getSocketReader().readUTF();
+                byte[] arbytes = new byte[client.getSocketReader().readInt()];
+                for(int i = 0; i < arbytes.length; i++){
+                    arbytes[i] = client.getSocketReader().readByte();
+                }
+                clientCredentials = new String(arbytes);
+                System.out.println("LOG AUTH: clientCredentials: " + clientCredentials);
             } catch (IOException e) {
                 client.sendMessage("Auth error");
             }
+            System.out.println("LOG DEBUG STEP-7: AUTH checks login-pass");
             if (isAuthOk(clientCredentials)) {
                 try {
-                    server.addClient(clientCredentials, client);
+                    System.out.println("LOG DEBUG STEP-12.authOK!: AUTH tries to add a client");
+                    server.addClient(client);
                     client.setAuthorized(true);
                     System.out.println("Client authorized :" + clientCredentials);
                 } catch (AuthFailException e) {
@@ -45,10 +59,13 @@ public class AuthService implements Runnable {
     }
 
     private boolean isAuthOk(String clientCredentials) {
+        System.out.println("LOG DEBUG STEP-8: AUTH parsing login");
         Matcher matcher = pattern.matcher(clientCredentials);
         if (matcher.find()) {
             String login = matcher.group("login");
             String passHash = matcher.group("passHash");
+            client.setClientName(login);
+            System.out.println("LOG DEBUG STEP-9: AUTH parsed login-pass");
             try {
                 tryLogin(login, passHash);
             } catch (AuthNameDoubled dne) {
@@ -66,7 +83,7 @@ public class AuthService implements Runnable {
         if (server.getUserList().contains(login))
             throw new AuthNameDoubled(login);
         try {
-            System.out.println("LOG AuthService tryLogin: " + login + " " + passHash);
+            System.out.println("LOG DEBUG STEP-10: AUTH tryLogin: " + login + " " + passHash);
             authSuccess = SQLHandler.auth(login, passHash);
         } catch (SQLException e) {
             e.printStackTrace();
