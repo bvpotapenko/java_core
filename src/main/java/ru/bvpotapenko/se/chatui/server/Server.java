@@ -12,6 +12,7 @@ public class Server {
         new Thread(server).start();
         server.addFilter(new JavaOnlyFilter());
         processCommands(server);
+        System.exit(0);
     }
 
     private static void processCommands(ChatServer server){

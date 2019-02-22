@@ -7,6 +7,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import ru.bvpotapenko.se.chatui.network.Client;
+import ru.bvpotapenko.se.chatui.utils.SHAEncoder;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -25,8 +26,11 @@ public class LoginController implements Initializable, PrimaryStageAware {
     }
 
     public void login(ActionEvent event) {
+        String hashPass = SHAEncoder.getSHA(passwordTextField.getText());
+        if(hashPass == null || hashPass.isEmpty())
+            return;
         new Thread(client).start();
-        client.authorize(loginTextField.getText(), passwordTextField.getText());
+        client.authorize(loginTextField.getText(), hashPass);
         loginTextField.setDisable(true);
         passwordTextField.setDisable(true);
         loginButton.setDisable(true);

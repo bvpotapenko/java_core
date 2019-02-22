@@ -3,7 +3,11 @@ package ru.bvpotapenko.se.chatui.server;
 import ru.bvpotapenko.se.chatui.server.Exceptions.AuthFailException;
 import ru.bvpotapenko.se.chatui.server.Exceptions.AuthNameDoubled;
 
+import javax.xml.bind.DatatypeConverter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -20,17 +24,21 @@ public class AuthService implements Runnable {
 
     @Override
     public void run() {
-        String clientCridentials = "";
+        String clientCredentials = "";
         while (client != null && client.isUp() && !client.isAuthorized()) {
             try {
-                clientCridentials = client.getSocketReader().readUTF();
+                clientCredentials = client.getSocketReader().readUTF();
             } catch (IOException e) {
                 client.sendMessage("Auth error");
             }
-            if (isAuthOk(clientCridentials)) {
-                server.addClient(clientCridentials, client);
-                client.setAuthorized(true);
-                System.out.println("Client authorized :" + clientCridentials);
+            if (isAuthOk(clientCredentials)) {
+                try {
+                    server.addClient(clientCredentials, client);
+                    client.setAuthorized(true);
+                    System.out.println("Client authorized :" + clientCredentials);
+                } catch (AuthFailException e) {
+                    e.printStackTrace();
+                }
             } else
                 server.removeClient(client);
         }
@@ -58,6 +66,7 @@ public class AuthService implements Runnable {
         if (server.getUserList().contains(login))
             throw new AuthNameDoubled(login);
         try {
+            System.out.println("LOG AuthService tryLogin: " + login + " " + passHash);
             authSuccess = SQLHandler.auth(login, passHash);
         } catch (SQLException e) {
             e.printStackTrace();

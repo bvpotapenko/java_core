@@ -5,6 +5,6 @@ import java.net.URL;
 class MessageContent {
     String text;
     URL fileURL;
-    MessageFileTrype messageFileTrype;
+    MessageFileType messageFileTrype;
     boolean mustBeDownloaded;
 }

@@ -8,9 +8,9 @@ public class JavaOnlyFilter implements ChatFilter {
 
     public JavaOnlyFilter(){
         censuredList = new LinkedList<>();
-        censuredList.add("tea");
-        censuredList.add("water");
-        censuredList.add("wine");
+        censuredList.add("shit");
+        censuredList.add("shit");
+        censuredList.add("shit");
     }
     @Override
     public String filter(String message) {

@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -16,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ChatServer implements Runnable {
     private ServerSocket serverSocket;
     private Map<String, ChatServerClient> clients = new ConcurrentHashMap<>();
-    private List<ChatFilter> filters;
+    private List<ChatFilter> filters = new LinkedList<>();
 
     public enum ChatServerState {
         ON,
@@ -62,7 +63,7 @@ public class ChatServer implements Runnable {
         final String filteredMessage = filter(message);
         clients.forEach((name, client) -> {
             if (!name.equalsIgnoreCase(sender)) {
-                client.sendMessage(sender + ": " + filteredMessage);
+                client.sendMessage(clients.get(sender).getNick() + ": " + filteredMessage);
                 System.out.println("LOG ChatServer sends a broadcast message to: " + name);
             }
         });
@@ -70,7 +71,7 @@ public class ChatServer implements Runnable {
 
     public synchronized void sendPrivateMessage(String sender, String receiverName, String message) {
         final String filteredMessage = filter(message);
-        clients.get(receiverName).sendMessage("PM from " + sender + ": " + filteredMessage);
+        clients.get(receiverName).sendMessage("PM from " + clients.get(sender).getNick() + ": " + filteredMessage);
     }
 
     private void close() throws IOException {
@@ -83,6 +84,7 @@ public class ChatServer implements Runnable {
     public void stop() {
         try {
             serverState = ChatServerState.OFF;
+            SQLHandler.close();
             close();
             Thread.currentThread().interrupt();
         } catch (IOException e) {
@@ -132,8 +134,14 @@ public class ChatServer implements Runnable {
         if (clients.containsKey(clientName)) {
             throw new AuthNameDoubled(clientName);
         }
+        System.out.println("LOG try ChatServer.addClient: " + clientName);
         clients.put(clientName, client);
-        sendBroadcast("", "New user: " + clientName + " joined.");
+        try {
+            client.setNick(SQLHandler.getClientNick(clientName));
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        sendBroadcast("", "New user: " + client.getNick() + " joined.");
     }
 
     public void addFilter(ChatFilter filter) {
@@ -144,5 +152,9 @@ public class ChatServer implements Runnable {
         for (ChatFilter filter: filters)
             message = filter.filter(message);
         return message;
+    }
+
+    public void setNewNick(String clientName, String newNick) throws SQLException {
+        SQLHandler.setClientNick(clientName, newNick);
     }
 }

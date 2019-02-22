@@ -11,7 +11,7 @@ public class ClientTimeOutKiller extends TimerTask {
         this.server = server;
         this.client = client;
         Timer timer = new Timer();
-        timer.schedule(this, 3000);
+        timer.schedule(this, 30000);
     }
 
     @Override

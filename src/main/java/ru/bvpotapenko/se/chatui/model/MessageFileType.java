@@ -1,6 +1,6 @@
 package ru.bvpotapenko.se.chatui.model;
 
-public enum MessageFileTrype {
+public enum MessageFileType {
     IMAGE,
     VIDEO,
     OTHER

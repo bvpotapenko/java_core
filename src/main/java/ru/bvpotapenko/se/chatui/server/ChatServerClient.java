@@ -2,6 +2,7 @@ package ru.bvpotapenko.se.chatui.server;
 
 import java.io.*;
 import java.net.Socket;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -15,8 +16,8 @@ public class ChatServerClient implements Runnable {
     private ChatServer server;
     private Socket socket;
 
-    // FIXME: 21-Jan-19  must be implemented as UserService with DB connection
     private String clientName = "";
+    private String nick = "";
     private boolean isAuthorized = false;
 
     public ChatServerClient(Socket socket, ChatServer server) throws IOException {
@@ -72,6 +73,20 @@ public class ChatServerClient implements Runnable {
                         break;
                     case "ul":
                         sendMessage("Connected users: " + server.getUserList());
+                    case "nick":
+                        String newNick = parsedMessage.get("message");
+                        if(newNick == null || newNick.isEmpty()){
+                            sendMessage("Nick can't be empty");
+                        }else{
+                            try {
+                                server.setNewNick(clientName, parsedMessage.get("message"));
+                                this.nick = newNick;
+                            } catch (SQLException e) {
+                                sendMessage("Nick set error");
+                                e.printStackTrace();
+                            }
+                        }
+                        break;
                     default:
                         server.sendPrivateMessage(clientName, clientName, "Unknown command");
                 }
@@ -81,6 +96,11 @@ public class ChatServerClient implements Runnable {
             e.printStackTrace();
         }
     }
+
+    /**Commands examples:
+     * /auth u1&B78F576611EC06F96AF3CA654C22172A5D746C40
+     * /nick newNick
+     */
 
     private Map<String, String> parseMessage(String message) {
         if (message == null || message.isEmpty()) return null;
@@ -102,7 +122,7 @@ public class ChatServerClient implements Runnable {
                 parsedMessage.put("command", matcher.group("comm"));
                 parsedMessage.put("message", matcher.group("mess2"));
             } else if(matcher.group("onlyCommand") != null){
-
+                parsedMessage.put("command", matcher.group("onlyCommand"));
             }else {
                 parsedMessage.put("command", "broadcast");
                 parsedMessage.put("message", matcher.group("mess3"));
@@ -154,5 +174,13 @@ public class ChatServerClient implements Runnable {
 
     public DataInputStream getSocketReader() {
         return socketReader;
+    }
+
+    public String getNick() {
+        return nick;
+    }
+
+    public void setNick(String nick) {
+        this.nick = nick;
     }
 }
