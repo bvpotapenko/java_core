@@ -43,7 +43,7 @@ public class SQLHandler {
     }
     static void setClientNick(String login, String newNick)throws SQLException{
         PreparedStatement statement = connection.prepareStatement(
-                "UPDATE TABLE users SET nickname =? WHERE login = ?");
+                "UPDATE users SET nickname =? WHERE login = ?");
         statement.setString(1, newNick);
         statement.setString(2, login);
         statement.executeQuery();
