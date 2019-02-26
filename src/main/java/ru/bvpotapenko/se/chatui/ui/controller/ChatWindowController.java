@@ -8,12 +8,13 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import ru.bvpotapenko.se.chatui.network.Client;
+import org.apache.commons.io.input.ReversedLinesFileReader;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.ResourceBundle;
+import java.util.Stack;
 
 public class ChatWindowController implements Initializable, PrimaryStageAware {
     public TextField messageTextField;
@@ -42,6 +43,39 @@ public class ChatWindowController implements Initializable, PrimaryStageAware {
                 chatTextAria.appendText(String.valueOf((char) b));
             }
         });
+        loadLastMessages();
+    }
+
+    private void loadLastMessages(){
+        /**
+         * 1. open file
+         * 2. if no file -> create -> return
+         * 3. if not empty
+         *  3.1. while <100
+         *         read from end to stack
+         *         append to TextArea
+         * 4. close file.
+         */
+        File history = new File(".\\history.txt");
+        if(!history.exists()){
+            try {
+                history.createNewFile();
+                return;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        Stack<String> stack = new Stack<>();
+        String line;
+        try (ReversedLinesFileReader object = new ReversedLinesFileReader(history, Charset.forName("UTF-8"))){
+            while (stack.size() <= 100 && (line = object.readLine())!= null)
+            stack.push(line);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        while (stack.size()>0){
+            chatTextAria.appendText(stack.pop() + "\n");
+        }
     }
 
     public void sendMessage(ActionEvent event) {
@@ -51,6 +85,7 @@ public class ChatWindowController implements Initializable, PrimaryStageAware {
        /* chatTextAria.appendText("You said: " + message + "\n");*/
         messageTextField.clear();
     }
+
 
     public void logout(ActionEvent event) {
         client.closeConnection();

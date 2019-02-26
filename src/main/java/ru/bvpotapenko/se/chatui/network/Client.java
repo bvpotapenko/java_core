@@ -72,6 +72,7 @@ public class Client implements Runnable {
                     continue;
                 }
                 outPrintStream.println(message);
+                appendToHistory(message);
             }
             System.out.println("LOG client socket stopped listening");
         } catch (IOException e) {
@@ -129,5 +130,23 @@ public class Client implements Runnable {
 
     public ClientState getSocketState() {
         return socketState;
+    }
+
+
+    private void appendToHistory(String line){
+        File history = new File(".\\history.txt");
+        if(!history.exists()){
+            try {
+                history.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        try(BufferedWriter br = new BufferedWriter(new FileWriter(history, true))) {
+            br.write(line);
+            br.newLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

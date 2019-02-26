@@ -3,7 +3,6 @@ package ru.bvpotapenko.se.chatui.server;
 import java.io.*;
 import java.net.Socket;
 import java.sql.SQLException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -30,7 +29,7 @@ public class ChatServerClient implements Runnable {
 
     @Override
     public void run() {
-        if(!socket.isClosed()) {
+        if (!socket.isClosed()) {
             System.out.println("LOG DEBUG STEP-3: A client tries to auth");
             waitForAuth();
             System.out.println("LOG DEBUG STEP-FINAL: A client is ready");
@@ -38,12 +37,12 @@ public class ChatServerClient implements Runnable {
         }
     }
 
-    private void waitForAuth(){
+    private void waitForAuth() {
         AuthService auth = new AuthService(server, this);
         System.out.println("LOG DEBUG STEP-4: A client starts auth service");
         new Thread(auth).start();
         System.out.println("LOG DEBUG STEP-4.afterAuthStart: A client sleeps for auth");
-        while (!isAuthorized()){
+        while (!isAuthorized()) {
             try {
                 Thread.sleep(50);
             } catch (InterruptedException e) {
@@ -54,13 +53,13 @@ public class ChatServerClient implements Runnable {
         sendMessage("/auth_ok");
     }
 
-    private void waitForMessage(){
+    private void waitForMessage() {
         try {
             while (true) {
                 System.out.println("LOG CSClient waits for a message");
                 //String message = socketReader.readUTF();
                 byte[] arbytes = new byte[socketReader.readInt()];
-                for(int i = 0; i < arbytes.length; i++){
+                for (int i = 0; i < arbytes.length; i++) {
                     arbytes[i] = socketReader.readByte();
                 }
                 String message = new String(arbytes);
@@ -88,9 +87,9 @@ public class ChatServerClient implements Runnable {
                         break;
                     case "nick":
                         String newNick = parsedMessage.get("message");
-                        if(newNick == null || newNick.isEmpty()){
+                        if (newNick == null || newNick.isEmpty()) {
                             sendMessage("Nick can't be empty");
-                        }else{
+                        } else {
                             try {
                                 server.setNewNick(clientName, parsedMessage.get("message"));
                                 this.nick = newNick;
@@ -110,10 +109,11 @@ public class ChatServerClient implements Runnable {
         }
     }
 
-    /**Commands examples:
-     * /u&nick_1 hello!
-     * /auth u1&B78F576611EC06F96AF3CA654C22172A5D746C40
-     * /nick newNick
+    /**
+     * Commands examples:
+     * Private message: /u&nick_1 hello!
+     * Login: /auth u1&B78F576611EC06F96AF3CA654C22172A5D746C40
+     * Set new nick name: /nick newNick
      */
 
     private Map<String, String> parseMessage(String message) {
@@ -122,9 +122,8 @@ public class ChatServerClient implements Runnable {
         Map<String, String> parsedMessage = new HashMap<>();
 
         Pattern pattern = Pattern.compile(
-                        "^[/](?<commandPrefix>\\w+)[&](?<commandSuffix>\\w+([&]\\w+)*)\\s(?<mess1>.+)|" +
+                "^[/](?<commandPrefix>\\w+)[&](?<commandSuffix>\\w+([&]\\w+)*)\\s(?<mess1>.+)|" +
                         "^[/](?<comm>\\w+)\\s(?<mess2>.+)|" +
-                     //   "^[/]\\w+([&](?<onlyCommand>[\\w\\d]+))|" +
                         "^[/](?<onlyCommand>[\\w\\d]+)|" +
                         "^(?<mess3>[^/].*)");
         Matcher matcher = pattern.matcher(message);
@@ -136,12 +135,12 @@ public class ChatServerClient implements Runnable {
             } else if (matcher.group("comm") != null) {
                 parsedMessage.put("command", matcher.group("comm"));
                 parsedMessage.put("message", matcher.group("mess2"));
-            } else if(matcher.group("onlyCommand") != null){
+            } else if (matcher.group("onlyCommand") != null) {
                 parsedMessage.put("command", matcher.group("onlyCommand"));
-            }else if(matcher.group("mess3") != null){
+            } else if (matcher.group("mess3") != null) {
                 parsedMessage.put("command", "broadcast");
                 parsedMessage.put("message", matcher.group("mess3"));
-            }else{
+            } else {
                 parsedMessage.put("command", "unknownCommand");
             }
         }
