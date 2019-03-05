@@ -1,4 +1,4 @@
-package ru.bvpotapenko.se.chatui.server;
+package ru.bvpotapenko.se.chat2.server;
 
 import java.util.Timer;
 import java.util.TimerTask;

@@ -1,4 +1,4 @@
-package ru.bvpotapenko.se.chatui.utils;
+package ru.bvpotapenko.se.chat2.utils;
 
 import javax.xml.bind.DatatypeConverter;
 import java.nio.charset.StandardCharsets;

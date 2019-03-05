@@ -1,19 +1,15 @@
-package ru.bvpotapenko.se.chatui.server;
+package ru.bvpotapenko.se.chat2.server;
 
-import ru.bvpotapenko.se.chatui.server.Exceptions.AuthFailException;
-import ru.bvpotapenko.se.chatui.server.Exceptions.AuthNameDoubled;
+import ru.bvpotapenko.se.chat2.server.Exceptions.AuthFailException;
+import ru.bvpotapenko.se.chat2.server.Exceptions.AuthNameDoubled;
 
-import javax.xml.bind.DatatypeConverter;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
-import java.util.Arrays;
+import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class AuthService implements Runnable {
+public class AuthService implements Callable<Boolean> {
     private ChatServer server;
     private ChatServerClient client;
     private Pattern pattern = Pattern.compile("^[/]auth\\s(?<login>\\w+)[&](?<passHash>.+)$");
@@ -24,38 +20,32 @@ public class AuthService implements Runnable {
     }
 
     @Override
-    public void run() {
+    public Boolean call() {
         System.out.println("LOG DEBUG STEP-5: AUTH start");
         String clientCredentials = "";
-        System.out.println("client != null " + (client != null) +
-                "\nclient.isUp() " + client.isUp() +
-                "\n!client.isAuthorized()" + !client.isAuthorized());
-        while (client != null && client.isUp() && !client.isAuthorized()) {
+        if (client != null && client.isUp() && !client.isAuthorized()) {
             try {
                 System.out.println("LOG DEBUG STEP-6: AUTH waits for login-pass");
-               // clientCredentials = client.getSocketReader().readUTF();
-                byte[] arbytes = new byte[client.getSocketReader().readInt()];
-                for(int i = 0; i < arbytes.length; i++){
-                    arbytes[i] = client.getSocketReader().readByte();
-                }
-                clientCredentials = new String(arbytes);
+                clientCredentials = getAuthMessage();
                 System.out.println("LOG AUTH: clientCredentials: " + clientCredentials);
             } catch (IOException e) {
                 client.sendMessage("Auth error");
             }
             System.out.println("LOG DEBUG STEP-7: AUTH checks login-pass");
             if (isAuthOk(clientCredentials)) {
-                try {
-                    System.out.println("LOG DEBUG STEP-12.authOK!: AUTH tries to add a client");
-                    server.addClient(client);
-                    client.setAuthorized(true);
-                    System.out.println("Client authorized :" + clientCredentials);
-                } catch (AuthFailException e) {
-                    e.printStackTrace();
-                }
-            } else
-                server.removeClient(client);
+                return true;
+            }
         }
+        return false;
+    }
+
+    // TODO: 05-Mar-19 replace later with JSON-object
+    private String getAuthMessage() throws IOException {
+        byte[] arbytes = new byte[client.getSocketReader().readInt()];
+        for (int i = 0; i < arbytes.length; i++) {
+            arbytes[i] = client.getSocketReader().readByte();
+        }
+        return new String(arbytes);
     }
 
     private boolean isAuthOk(String clientCredentials) {
@@ -99,4 +89,6 @@ public class AuthService implements Runnable {
         client.sendMessage(errorMessage);
         return false;
     }
+
+
 }

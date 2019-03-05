@@ -1,4 +1,8 @@
-package ru.bvpotapenko.se.chatui.network;
+package ru.bvpotapenko.se.chat2.chatui.network;
+
+import javafx.application.Platform;
+import ru.bvpotapenko.se.chat2.chatui.Main;
+import ru.bvpotapenko.se.chat2.chatui.ui.controller.LoginController;
 
 import java.io.*;
 import java.net.Socket;
@@ -9,6 +13,9 @@ public class Client implements Runnable {
     private boolean isUserAuthorized = false;
     private ClientState socketState = ClientState.DISCONNECTED;
 
+    private LoginController loginController;
+    private Main mainApp;
+
     private Socket socket;
     private String clientName;
 
@@ -16,7 +23,8 @@ public class Client implements Runnable {
     private DataOutputStream socketWriter;
     private PrintStream outPrintStream;
 
-    public Client(String host, int port) {
+    public Client(String host, int port, Main mainApp) {
+        this.mainApp = mainApp;
         try {
             this.clientName = "";
             socketState = ClientState.CONNECTING;
@@ -44,13 +52,11 @@ public class Client implements Runnable {
         if (socketState == ClientState.CONNECTED) {
             if (message == null || message.isEmpty()) return;
             try {
-                /*socketWriter.writeUTF(message + "\n");
-                socketWriter.flush();*/
                 //We ensure the length of the message to parse on server side;
                 byte[] arbytes = message.getBytes(Charset.forName("UTF-8"));
                 socketWriter.writeInt(arbytes.length);
                 socketWriter.write(arbytes);
-
+                socketWriter.flush();
                 System.out.println("LOG quiet message was sent from client: " + message);
             } catch (IOException e) {
                 System.err.println("Message send error: " + e.getMessage());
@@ -66,10 +72,15 @@ public class Client implements Runnable {
             while (socketState == ClientState.CONNECTED) {
                 String message = socketReader.readUTF();
                 System.out.println("LOG client received a message: " + message);
-                if (message.startsWith("/auth_ok")) {
+                if (!isUserAuthorized && message.startsWith("/auth_ok")) {
                     isUserAuthorized = true;
                     System.out.println("LOG client auth confirmed");
+                    //loginController.switchScene(true);
+                    Platform.runLater(() ->mainApp.switchToChatScene(true));
                     continue;
+                }else if(!isUserAuthorized){
+                   //loginController.switchScene(false);
+                    Platform.runLater(() ->mainApp.switchToChatScene(false));
                 }
                 outPrintStream.println(message);
                 appendToHistory(message);
@@ -93,24 +104,13 @@ public class Client implements Runnable {
         return socket;
     }
 
-    public void authorize(String login, String password) {
+    public void authorize(LoginController controller, String login, String hashPassword) {
+        this.loginController = controller;
         System.out.println("LOG: Auth attempt for " + login);
         if (socketState == ClientState.CONNECTED) {
             clientName = login;
-            new Thread(() -> {
-                while (!isUserAuthorized) {
-                    sendQuietMessage("/auth " + clientName+"&"+password);
-                    try {
-                        Thread.sleep(2000);
-                    } catch (InterruptedException e) {
-                        System.err.println("Client auth error: " + e.getMessage());
-                        e.printStackTrace();
-                    }
-                }
-                System.out.println("Authorization success");
-            }).start();
-        } else
-            System.out.println("LOG Auth attempt failed");
+            sendQuietMessage("/auth " + clientName + "&" + hashPassword);
+        }
     }
 
     public boolean isUserAuthorized() {
@@ -133,16 +133,16 @@ public class Client implements Runnable {
     }
 
 
-    private void appendToHistory(String line){
+    private void appendToHistory(String line) {
         File history = new File(".\\history.txt");
-        if(!history.exists()){
+        if (!history.exists()) {
             try {
                 history.createNewFile();
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
-        try(BufferedWriter br = new BufferedWriter(new FileWriter(history, true))) {
+        try (BufferedWriter br = new BufferedWriter(new FileWriter(history, true))) {
             br.write(line);
             br.newLine();
         } catch (IOException e) {

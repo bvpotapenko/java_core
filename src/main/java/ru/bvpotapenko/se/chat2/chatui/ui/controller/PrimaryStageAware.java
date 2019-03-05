@@ -1,4 +1,4 @@
-package ru.bvpotapenko.se.chatui.ui.controller;
+package ru.bvpotapenko.se.chat2.chatui.ui.controller;
 
 import javafx.stage.Stage;
 

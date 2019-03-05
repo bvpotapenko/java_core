@@ -1,10 +1,16 @@
-package ru.bvpotapenko.se.chatui.server;
+package ru.bvpotapenko.se.chat2.server;
+
+import ru.bvpotapenko.se.chat2.server.Exceptions.AuthFailException;
 
 import java.io.*;
 import java.net.Socket;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -31,26 +37,37 @@ public class ChatServerClient implements Runnable {
     public void run() {
         if (!socket.isClosed()) {
             System.out.println("LOG DEBUG STEP-3: A client tries to auth");
-            waitForAuth();
-            System.out.println("LOG DEBUG STEP-FINAL: A client is ready");
-            waitForMessage();
+            try {
+                waitForAuth();
+                System.out.println("LOG DEBUG STEP-FINAL: A client is ready");
+
+            } catch (InterruptedException | AuthFailException e) {
+                e.printStackTrace();
+                return;
+            }
+            if (isAuthorized()) {
+                waitForMessage();
+            }
         }
     }
 
-    private void waitForAuth() {
+    private void waitForAuth() throws InterruptedException, AuthFailException {
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
         AuthService auth = new AuthService(server, this);
         System.out.println("LOG DEBUG STEP-4: A client starts auth service");
-        new Thread(auth).start();
+        Future<Boolean> futureIsAuth = executorService.submit(auth);
         System.out.println("LOG DEBUG STEP-4.afterAuthStart: A client sleeps for auth");
-        while (!isAuthorized()) {
-            try {
-                Thread.sleep(50);
-            } catch (InterruptedException e) {
-                System.err.println("Server client auth fail: " + e.getMessage());
-                e.printStackTrace();
-            }
+        try {
+            setAuthorized(futureIsAuth.get());
+        } catch (ExecutionException e) {
+            e.printStackTrace();
         }
-        sendMessage("/auth_ok");
+        if (isAuthorized) {
+            System.out.println("LOG DEBUG STEP-12.authOK!: AUTH tries to add a client");
+            server.addClient(this);
+            sendMessage("/auth_ok");
+        }
+        executorService.shutdown();
     }
 
     private void waitForMessage() {
@@ -122,24 +139,24 @@ public class ChatServerClient implements Runnable {
         Map<String, String> parsedMessage = new HashMap<>();
 
         Pattern pattern = Pattern.compile(
-                "^[/](?<commandPrefix>\\w+)[&](?<commandSuffix>\\w+([&]\\w+)*)\\s(?<mess1>.+)|" +
-                        "^[/](?<comm>\\w+)\\s(?<mess2>.+)|" +
+                "^[/](?<commandPrefix>\\w+)[&](?<commandSuffix>\\w+([&]\\w+)*)\\s(?<data1>.+)|" +
+                        "^[/](?<singleComm>\\w+)\\s(?<data2>.+)|" +
                         "^[/](?<onlyCommand>[\\w\\d]+)|" +
-                        "^(?<mess3>[^/].*)");
+                        "^(?<data3>[^/].*)");
         Matcher matcher = pattern.matcher(message);
         if (matcher.find()) {
             if (matcher.group("commandPrefix") != null) {
                 parsedMessage.put("command", matcher.group("commandPrefix"));
                 parsedMessage.put("user", matcher.group("commandSuffix"));
-                parsedMessage.put("message", matcher.group("mess1"));
-            } else if (matcher.group("comm") != null) {
-                parsedMessage.put("command", matcher.group("comm"));
-                parsedMessage.put("message", matcher.group("mess2"));
+                parsedMessage.put("message", matcher.group("data1"));
+            } else if (matcher.group("singleComm") != null) {
+                parsedMessage.put("command", matcher.group("singleComm"));
+                parsedMessage.put("message", matcher.group("data2"));
             } else if (matcher.group("onlyCommand") != null) {
                 parsedMessage.put("command", matcher.group("onlyCommand"));
-            } else if (matcher.group("mess3") != null) {
+            } else if (matcher.group("data3") != null) {
                 parsedMessage.put("command", "broadcast");
-                parsedMessage.put("message", matcher.group("mess3"));
+                parsedMessage.put("message", matcher.group("data3"));
             } else {
                 parsedMessage.put("command", "unknownCommand");
             }

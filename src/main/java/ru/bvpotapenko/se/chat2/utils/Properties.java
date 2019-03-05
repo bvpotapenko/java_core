@@ -1,4 +1,4 @@
-package ru.bvpotapenko.se.chatui.utils;
+package ru.bvpotapenko.se.chat2.utils;
 
 public interface Properties {
     String HOST = "localhost";

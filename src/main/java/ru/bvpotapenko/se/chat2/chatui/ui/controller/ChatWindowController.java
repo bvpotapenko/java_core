@@ -1,4 +1,4 @@
-package ru.bvpotapenko.se.chatui.ui.controller;
+package ru.bvpotapenko.se.chat2.chatui.ui.controller;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.Initializable;
@@ -7,7 +7,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
-import ru.bvpotapenko.se.chatui.network.Client;
+import ru.bvpotapenko.se.chat2.chatui.network.Client;
 import org.apache.commons.io.input.ReversedLinesFileReader;
 
 import java.io.*;
@@ -15,6 +15,8 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ResourceBundle;
 import java.util.Stack;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 public class ChatWindowController implements Initializable, PrimaryStageAware {
     public TextField messageTextField;
@@ -24,6 +26,7 @@ public class ChatWindowController implements Initializable, PrimaryStageAware {
     private PrintStream printStream;
     private Stage primaryStage;
     private Client client;
+    private Future<Client> futureClient;
 
     /**
      * Called to initialize a controller after its root element has been
@@ -43,7 +46,6 @@ public class ChatWindowController implements Initializable, PrimaryStageAware {
                 chatTextAria.appendText(String.valueOf((char) b));
             }
         });
-        loadLastMessages();
     }
 
     private void loadLastMessages(){
@@ -107,13 +109,27 @@ public class ChatWindowController implements Initializable, PrimaryStageAware {
         messageTextField.clear();
     }
 
-    public void setClient(Client client) {
-        this.client = client;
-        client.setOutPrintStream(printStream);
+    public void setClient(Future<Client> futureClient) {
+        this.futureClient = futureClient;
     }
 
     @Override
     public void setPrimaryStage(Stage primaryStage) {
         this.primaryStage = primaryStage;
+    }
+
+    public void initBackgroundTasks() {
+        Thread loader = new Thread(() -> {
+            try {
+                client = futureClient.get();
+                client.setOutPrintStream(printStream);
+                loadLastMessages();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
+        });
+        loader.start();
     }
 }

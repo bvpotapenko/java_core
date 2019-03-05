@@ -1,4 +1,4 @@
-package ru.bvpotapenko.se.chatui.server.Exceptions;
+package ru.bvpotapenko.se.chat2.server.Exceptions;
 
 public class AuthNameDoubled extends AuthFailException {
     private String login;

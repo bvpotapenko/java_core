@@ -1,4 +1,4 @@
-package ru.bvpotapenko.se.chatui;
+package ru.bvpotapenko.se.chat2.chatui;
 
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -7,19 +7,32 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
-import ru.bvpotapenko.se.chatui.network.Client;
-import ru.bvpotapenko.se.chatui.ui.controller.ChatWindowController;
-import ru.bvpotapenko.se.chatui.ui.controller.LoginController;
-import ru.bvpotapenko.se.chatui.utils.Properties;
+import ru.bvpotapenko.se.chat2.chatui.network.Client;
+import ru.bvpotapenko.se.chat2.chatui.network.ClientConnectionService;
+import ru.bvpotapenko.se.chat2.chatui.ui.controller.ChatWindowController;
+import ru.bvpotapenko.se.chat2.chatui.ui.controller.LoginController;
+import ru.bvpotapenko.se.chat2.utils.Properties;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 
 public class Main extends Application {
-    private Client client;
+    //private Client client;
+    LoginController loginController;
+
+    public void switchToChatScene(boolean isOk){
+        loginController.switchScene(isOk);
+    }
 
     @Override
     public void start(Stage primaryStage) throws Exception {
-        //Connection to Server
-        setUpClient();
+
+        ClientConnectionService ccs = new ClientConnectionService(this);
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        Future<Client> futureClient = executorService.submit(ccs);
+        executorService.shutdown();
 
         //init login
         FXMLLoader loginLoader = new FXMLLoader(getClass().getResource("/login.fxml"));
@@ -35,31 +48,30 @@ public class Main extends Application {
         chatScene.getStylesheets().add(Main.class.getResource("/chatwindow.css").toExternalForm());
         chatScene.setFill(Color.TRANSPARENT);
 
-        LoginController loginController = loginLoader.getController();
+        loginController = loginLoader.getController();
         loginController.setScene(chatScene);
-        loginController.setClient(client);
+        loginController.setClient(futureClient);
         loginController.setPrimaryStage(primaryStage);
 
         ChatWindowController chatWindowController = chatLoader.getController();
         chatWindowController.setScene(loginScene);
-        chatWindowController.setClient(client);
+        chatWindowController.setClient(futureClient);
         chatWindowController.setPrimaryStage(primaryStage);
+        chatWindowController.initBackgroundTasks();
 
 
         primaryStage.setTitle("Chat | Login");
         // FIXME: 21-Jan-19 handle close operation
-        primaryStage.setOnCloseRequest(e -> Platform.exit());
+        primaryStage.setOnCloseRequest(e -> {
+            Platform.exit();
+            System.exit(0);
+        });
         /*primaryStage.initStyle(StageStyle.TRANSPARENT);*/
         primaryStage.setResizable(false);
         primaryStage.setScene(loginScene);
         primaryStage.show();
     }
-    private void setUpClient(){
-        client = new Client(Properties.HOST, Properties.PORT);
-        client.setOutPrintStream(System.out);
-        if (client.getOutPrintStream() == null)
-            System.out.println("LOG in Main.setUpClient() outPrintStream == null");
-    }
+
     public static void main(String[] args) {
         launch(args);
     }

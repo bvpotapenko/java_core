@@ -1,8 +1,8 @@
-package ru.bvpotapenko.se.chatui.server;
+package ru.bvpotapenko.se.chat2.server;
 
-import ru.bvpotapenko.se.chatui.server.Exceptions.AuthFailException;
-import ru.bvpotapenko.se.chatui.server.Exceptions.AuthNameDoubled;
-import ru.bvpotapenko.se.chatui.server.filters.ChatFilter;
+import ru.bvpotapenko.se.chat2.server.Exceptions.AuthFailException;
+import ru.bvpotapenko.se.chat2.server.Exceptions.AuthNameDoubled;
+import ru.bvpotapenko.se.chat2.server.filters.ChatFilter;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -12,6 +12,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 /*Handles all the connections from clients*/
@@ -44,12 +46,14 @@ public class ChatServer implements Runnable {
 
     @Override
     public void run() {
+        ExecutorService executorService = Executors.newCachedThreadPool();
         while (serverState == ChatServerState.ON) {
             try {
                 System.out.println("LOG DEBUG STEP-1: Wait for a client");
                 ChatServerClient client = new ChatServerClient(serverSocket.accept(), this); // TODO: 20-Jan-19 process restart errors
                 System.out.println("LOG DEBUG STEP-2: Client hooked up");
-                new Thread(client).start();
+                //new Thread(client).start();
+                executorService.execute(client);
                 new ClientTimeOutKiller(this, client);
             } catch (IOException e) {
                 if (serverState == ChatServerState.OFF) {

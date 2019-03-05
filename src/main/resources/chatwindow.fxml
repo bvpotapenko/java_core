@@ -3,7 +3,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <BorderPane styleClass="borderpane" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="ru.bvpotapenko.se.chatui.ui.controller.ChatWindowController">
+            fx:controller="ru.bvpotapenko.se.chat2.chatui.ui.controller.ChatWindowController">
     <top>
         <VBox BorderPane.alignment="CENTER">
 

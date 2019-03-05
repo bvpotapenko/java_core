@@ -1,15 +1,18 @@
-package ru.bvpotapenko.se.chatui.server;
+package ru.bvpotapenko.se.chat2.server;
 
-import ru.bvpotapenko.se.chatui.server.filters.JavaOnlyFilter;
-import ru.bvpotapenko.se.chatui.utils.Properties;
+import ru.bvpotapenko.se.chat2.utils.Properties;
+import ru.bvpotapenko.se.chat2.server.filters.JavaOnlyFilter;
 
 import java.util.Scanner;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 
 public class Server {
     public static void main(String[] args) {
         ChatServer server = new ChatServer(Properties.PORT, "chat.db");
-        new Thread(server).start();
+        //new Thread(server).start();
+        Executors.newFixedThreadPool(1).execute(server);
         server.addFilter(new JavaOnlyFilter());
         processCommands(server);
         System.exit(0);

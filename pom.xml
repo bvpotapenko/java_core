@@ -73,7 +73,7 @@
                         <archive>
                             <manifest>
                                 <addClasspath>true</addClasspath>
-                                <mainClass>ru.bvpotapenko.se.chatui.Main</mainClass>
+                                <mainClass>ru.bvpotapenko.se.chat2.chatui.Main</mainClass>
                             </manifest>
                         </archive>
                     </configuration>
