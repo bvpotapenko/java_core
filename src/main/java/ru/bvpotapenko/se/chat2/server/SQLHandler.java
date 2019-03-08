@@ -1,5 +1,8 @@
 package ru.bvpotapenko.se.chat2.server;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.sql.*;
 import java.util.Random;
 
@@ -9,6 +12,7 @@ import java.util.Random;
  * u2 p2
  */
 public class SQLHandler {
+    private static final Logger LOGGER = LogManager.getLogger(ChatServerClient.class);
     private static Connection connection;
 
     public static void connect(String dbName) throws ClassNotFoundException, SQLException {
@@ -21,7 +25,7 @@ public class SQLHandler {
         PreparedStatement statement = connection.prepareStatement(
                 "SELECT password FROM \"users\" WHERE login = ?");
         statement.setString(1, login);
-        System.out.println("LOG DEBUG STEP-11: SQLHandler checks password ");
+        LOGGER.debug("LOG DEBUG STEP-11: SQLHandler checks password ");
         ResultSet rs = statement.executeQuery();
 
         if(rs.next() && rs.getString("password").equals(passHash)){

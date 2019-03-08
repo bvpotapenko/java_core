@@ -1,5 +1,7 @@
 package ru.bvpotapenko.se.chat2.server;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import ru.bvpotapenko.se.chat2.server.Exceptions.AuthFailException;
 
 import java.io.*;
@@ -16,6 +18,7 @@ import java.util.regex.Pattern;
 
 /*An entity of a connected client*/
 public class ChatServerClient implements Runnable {
+    private static final Logger LOGGER = LogManager.getLogger(ChatServerClient.class);
 
     private DataInputStream socketReader;
     private DataOutputStream socketWriter;
@@ -36,13 +39,13 @@ public class ChatServerClient implements Runnable {
     @Override
     public void run() {
         if (!socket.isClosed()) {
-            System.out.println("LOG DEBUG STEP-3: A client tries to auth");
+            LOGGER.debug("LOG DEBUG STEP-3: A client tries to auth");
             try {
                 waitForAuth();
-                System.out.println("LOG DEBUG STEP-FINAL: A client is ready");
+                LOGGER.debug("LOG DEBUG STEP-FINAL: A client is ready");
 
             } catch (InterruptedException | AuthFailException e) {
-                e.printStackTrace();
+                LOGGER.error(e.getMessage());
                 return;
             }
             if (isAuthorized()) {
@@ -54,16 +57,16 @@ public class ChatServerClient implements Runnable {
     private void waitForAuth() throws InterruptedException, AuthFailException {
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         AuthService auth = new AuthService(server, this);
-        System.out.println("LOG DEBUG STEP-4: A client starts auth service");
+        LOGGER.debug("LOG DEBUG STEP-4: A client starts auth service");
         Future<Boolean> futureIsAuth = executorService.submit(auth);
-        System.out.println("LOG DEBUG STEP-4.afterAuthStart: A client sleeps for auth");
+        LOGGER.debug("LOG DEBUG STEP-4.afterAuthStart: A client sleeps for auth");
         try {
             setAuthorized(futureIsAuth.get());
         } catch (ExecutionException e) {
-            e.printStackTrace();
+            LOGGER.error( e.getMessage());
         }
         if (isAuthorized) {
-            System.out.println("LOG DEBUG STEP-12.authOK!: AUTH tries to add a client");
+            LOGGER.debug("LOG DEBUG STEP-12.authOK!: AUTH tries to add a client");
             server.addClient(this);
             sendMessage("/auth_ok");
         }
@@ -73,8 +76,7 @@ public class ChatServerClient implements Runnable {
     private void waitForMessage() {
         try {
             while (true) {
-                System.out.println("LOG CSClient waits for a message");
-                //String message = socketReader.readUTF();
+                LOGGER.debug("LOG CSClient waits for a message");
                 byte[] arbytes = new byte[socketReader.readInt()];
                 for (int i = 0; i < arbytes.length; i++) {
                     arbytes[i] = socketReader.readByte();
@@ -83,17 +85,16 @@ public class ChatServerClient implements Runnable {
                 // FIXME: 21-Jan-19 use JSON objects for messages
                 Map<String, String> parsedMessage = parseMessage(message);
                 if (parsedMessage == null) continue;
-                System.out.println("LOG: \ncommand: " + parsedMessage.get("command") + "\n" +
+                LOGGER.debug("LOG: \ncommand: " + parsedMessage.get("command") + "\n" +
                         "user: " + parsedMessage.get("user") + "\n" +
                         "message: " + parsedMessage.get("message"));
                 switch (parsedMessage.get("command")) {
                     case "name":
-                        //clientName = parsedMessage.get("message");
                         if (isAuthorized)
                             sendMessage("/auth_ok " + clientName);
                         break;
                     case "broadcast":
-                        System.out.println("LOG case fired: \"broadcast\"");
+                        LOGGER.debug("LOG case fired: \"broadcast\"");
                         server.sendBroadcast(clientName, parsedMessage.get("message"));
                         break;
                     case "u":
@@ -112,7 +113,7 @@ public class ChatServerClient implements Runnable {
                                 this.nick = newNick;
                             } catch (SQLException e) {
                                 sendMessage("Nick set error");
-                                e.printStackTrace();
+                                LOGGER.error(e.getMessage());
                             }
                         }
                         break;
@@ -121,7 +122,7 @@ public class ChatServerClient implements Runnable {
                 }
             }
         } catch (IOException e) {
-            System.err.println("Server error: " + e.getMessage());
+            LOGGER.error("Server error: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -168,9 +169,9 @@ public class ChatServerClient implements Runnable {
         try {
             socketWriter.writeUTF(message + "\n");
             socketWriter.flush();
-            System.out.println("LOG message sent: " + message);
+            LOGGER.debug("LOG message sent: " + message);
         } catch (IOException e) {
-            System.err.println("Server send message error: " + e.getMessage());
+            LOGGER.error("Server send message error: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -184,7 +185,7 @@ public class ChatServerClient implements Runnable {
             socket.close();
             Thread.currentThread().interrupt();
         } catch (IOException e) {
-            System.err.println("Stop client error: " + e.getMessage());
+            LOGGER.error("Stop client error: " + e.getMessage());
             e.printStackTrace();
         }
     }

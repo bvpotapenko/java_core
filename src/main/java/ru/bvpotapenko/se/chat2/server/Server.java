@@ -1,24 +1,28 @@
 package ru.bvpotapenko.se.chat2.server;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import ru.bvpotapenko.se.chat2.utils.Properties;
 import ru.bvpotapenko.se.chat2.server.filters.JavaOnlyFilter;
 
 import java.util.Scanner;
-import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 
 public class Server {
+    private static final Logger LOGGER = LogManager.getLogger(Server.class);
+
     public static void main(String[] args) {
+        LOGGER.debug("Server started");
         ChatServer server = new ChatServer(Properties.PORT, "chat.db");
-        //new Thread(server).start();
         Executors.newFixedThreadPool(1).execute(server);
         server.addFilter(new JavaOnlyFilter());
         processCommands(server);
         System.exit(0);
     }
 
-    private static void processCommands(ChatServer server){
+    private static void processCommands(ChatServer server) {
+        LOGGER.debug("Server is ready to process commands");
         Scanner scanner = new Scanner(System.in);
         String command = "";
         System.out.println("Server started, press: " +

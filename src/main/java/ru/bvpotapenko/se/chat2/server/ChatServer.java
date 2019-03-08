@@ -1,5 +1,7 @@
 package ru.bvpotapenko.se.chat2.server;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import ru.bvpotapenko.se.chat2.server.Exceptions.AuthFailException;
 import ru.bvpotapenko.se.chat2.server.Exceptions.AuthNameDoubled;
 import ru.bvpotapenko.se.chat2.server.filters.ChatFilter;
@@ -18,6 +20,7 @@ import java.util.stream.Collectors;
 
 /*Handles all the connections from clients*/
 public class ChatServer implements Runnable {
+    private static final Logger LOGGER = LogManager.getLogger(ChatServer.class);
     private ServerSocket serverSocket;
     private Map<String, ChatServerClient> clients = new ConcurrentHashMap<>();
     private List<ChatFilter> filters = new LinkedList<>();
@@ -36,10 +39,10 @@ public class ChatServer implements Runnable {
             serverState = ChatServerState.ON;
             SQLHandler.connect(dbName);
         } catch (IOException e) {
-            System.err.println("Server can\'t connect to port: " + port);
+            LOGGER.error("Server can\'t connect to port: " + port);
             e.printStackTrace();
         } catch (SQLException | ClassNotFoundException e) {
-            System.err.println("Server can\'t connect to the data base: " + dbName);
+            LOGGER.error("Server can\'t connect to the data base: " + dbName);
             e.printStackTrace();
         }
     }
@@ -49,31 +52,31 @@ public class ChatServer implements Runnable {
         ExecutorService executorService = Executors.newCachedThreadPool();
         while (serverState == ChatServerState.ON) {
             try {
-                System.out.println("LOG DEBUG STEP-1: Wait for a client");
+                LOGGER.debug("LOG DEBUG STEP-1: Wait for a client");
                 ChatServerClient client = new ChatServerClient(serverSocket.accept(), this); // TODO: 20-Jan-19 process restart errors
-                System.out.println("LOG DEBUG STEP-2: Client hooked up");
-                //new Thread(client).start();
+                LOGGER.debug("LOG DEBUG STEP-2: Client hooked up");
                 executorService.execute(client);
                 new ClientTimeOutKiller(this, client);
             } catch (IOException e) {
                 if (serverState == ChatServerState.OFF) {
-                    System.err.println("Connection terminated by a request: " + e.getMessage());
+                    LOGGER.error("Connection terminated by a request: " + e.getMessage());
                 } else {
-                    System.err.println("Server add client error: " + e.getMessage());
+                    LOGGER.error("Server add client error: " + e.getMessage());
                     e.printStackTrace();
                 }
             }
         }
+        executorService.shutdown();
     }
 
     public synchronized void sendBroadcast(String sender, String message) {
         final String filteredMessage = clients.get(sender).getNick() + ": " + filter(message);
-        System.out.println("sender: " + sender);
-        System.out.println("LOG clients" + clients);
+        LOGGER.debug("sender: " + sender);
+        LOGGER.debug("LOG clients" + clients);
         clients.forEach((name, client) -> {
             if (!name.equalsIgnoreCase(sender)) {
                 client.sendMessage(filteredMessage);
-                System.out.println("LOG ChatServer sends a broadcast message to: " + name);
+                LOGGER.debug("LOG ChatServer sends a broadcast message to: " + name);
             }
         });
     }
@@ -123,7 +126,7 @@ public class ChatServer implements Runnable {
             close();
             Thread.currentThread().interrupt();
         } catch (IOException e) {
-            System.err.println("Stop server error: " + e.getMessage());
+            LOGGER.error("Stop server error: " + e.getMessage());
             e.printStackTrace();
             Thread.currentThread().interrupt();
         }
@@ -135,7 +138,7 @@ public class ChatServer implements Runnable {
             serverSocket = new ServerSocket(port);
             serverState = ChatServerState.ON;
         } catch (IOException e) {
-            System.err.println("On restart Server error:  can\'t connect to port: " + port);
+            LOGGER.error("On restart Server error:  can\'t connect to port: " + port);
             e.printStackTrace();
         }
     }
@@ -144,7 +147,7 @@ public class ChatServer implements Runnable {
         return new ArrayList(clients.keySet());
     }
 
-    public List<String> getNickList() {
+    public ArrayList getNickList() {
         return new ArrayList(clients
                 .entrySet()
                 .stream()
@@ -168,17 +171,17 @@ public class ChatServer implements Runnable {
             clients.remove(client.getClientName());
             client.stop();
         } catch (Exception e) {
-            System.err.println("Server remove client error: " + e.getMessage());
+            LOGGER.error("Server remove client error: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
     public synchronized void addClient(ChatServerClient client) throws AuthFailException {
-        System.out.println("LOG DEBUG STEP-13: SERVER add client: " + client.getClientName());
+        LOGGER.debug("LOG DEBUG STEP-13: SERVER add client: " + client.getClientName());
         if (clients.containsKey(client.getClientName())) {
             throw new AuthNameDoubled(client.getClientName());
         }
-        System.out.println("LOG try ChatServer.addClient: " + client.getClientName());
+        LOGGER.debug("LOG try ChatServer.addClient: " + client.getClientName());
         clients.put(client.getClientName(), client);
         try {
             client.setNick(SQLHandler.getClientNick(client.getClientName()));
@@ -190,7 +193,7 @@ public class ChatServer implements Runnable {
 
     public void addFilter(ChatFilter filter) {
         filters.add(filter);
-        System.out.println("Filter is added!");
+        LOGGER.debug("Filter is added!");
     }
 
     private String filter(String message) {

@@ -1,4 +1,4 @@
-package ru.bvpotapenko.se.chatui.model;
+package ru.bvpotapenko.se.chat2.model;
 
 import java.net.URL;
 

@@ -1,5 +1,7 @@
 package ru.bvpotapenko.se.chat2.server;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import ru.bvpotapenko.se.chat2.server.Exceptions.AuthFailException;
 import ru.bvpotapenko.se.chat2.server.Exceptions.AuthNameDoubled;
 
@@ -10,6 +12,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class AuthService implements Callable<Boolean> {
+    private static final Logger LOGGER = LogManager.getLogger(AuthService.class);
     private ChatServer server;
     private ChatServerClient client;
     private Pattern pattern = Pattern.compile("^[/]auth\\s(?<login>\\w+)[&](?<passHash>.+)$");
@@ -21,17 +24,17 @@ public class AuthService implements Callable<Boolean> {
 
     @Override
     public Boolean call() {
-        System.out.println("LOG DEBUG STEP-5: AUTH start");
+        LOGGER.debug("LOG DEBUG STEP-5: AUTH start");
         String clientCredentials = "";
         if (client != null && client.isUp() && !client.isAuthorized()) {
             try {
-                System.out.println("LOG DEBUG STEP-6: AUTH waits for login-pass");
+                LOGGER.debug("LOG DEBUG STEP-6: AUTH waits for login-pass");
                 clientCredentials = getAuthMessage();
-                System.out.println("LOG AUTH: clientCredentials: " + clientCredentials);
+                LOGGER.debug("LOG AUTH: clientCredentials: " + clientCredentials);
             } catch (IOException e) {
                 client.sendMessage("Auth error");
             }
-            System.out.println("LOG DEBUG STEP-7: AUTH checks login-pass");
+            LOGGER.debug("LOG DEBUG STEP-7: AUTH checks login-pass");
             if (isAuthOk(clientCredentials)) {
                 return true;
             }
@@ -49,13 +52,13 @@ public class AuthService implements Callable<Boolean> {
     }
 
     private boolean isAuthOk(String clientCredentials) {
-        System.out.println("LOG DEBUG STEP-8: AUTH parsing login");
+        LOGGER.debug("LOG DEBUG STEP-8: AUTH parsing login");
         Matcher matcher = pattern.matcher(clientCredentials);
         if (matcher.find()) {
             String login = matcher.group("login");
             String passHash = matcher.group("passHash");
             client.setClientName(login);
-            System.out.println("LOG DEBUG STEP-9: AUTH parsed login-pass");
+            LOGGER.debug("LOG DEBUG STEP-9: AUTH parsed login-pass");
             try {
                 tryLogin(login, passHash);
             } catch (AuthNameDoubled dne) {
@@ -73,7 +76,7 @@ public class AuthService implements Callable<Boolean> {
         if (server.getUserList().contains(login))
             throw new AuthNameDoubled(login);
         try {
-            System.out.println("LOG DEBUG STEP-10: AUTH tryLogin: " + login + " " + passHash);
+            LOGGER.debug("LOG DEBUG STEP-10: AUTH tryLogin: " + login + " " + passHash);
             authSuccess = SQLHandler.auth(login, passHash);
         } catch (SQLException e) {
             e.printStackTrace();
@@ -85,7 +88,7 @@ public class AuthService implements Callable<Boolean> {
     }
 
     private boolean getErrorMessage(AuthFailException e, String errorMessage) {
-        System.out.println(e.getFailInfo());
+        LOGGER.error(e.getFailInfo());
         client.sendMessage(errorMessage);
         return false;
     }
