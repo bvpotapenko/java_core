@@ -32,7 +32,7 @@ public class Main extends Application {
         ClientConnectionService ccs = new ClientConnectionService(this);
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         Future<Client> futureClient = executorService.submit(ccs);
-        executorService.shutdown();
+
 
         //init login
         FXMLLoader loginLoader = new FXMLLoader(getClass().getResource("/login.fxml"));
@@ -63,6 +63,7 @@ public class Main extends Application {
         primaryStage.setTitle("Chat | Login");
         // FIXME: 21-Jan-19 handle close operation
         primaryStage.setOnCloseRequest(e -> {
+            executorService.shutdown();
             Platform.exit();
             System.exit(0);
         });
