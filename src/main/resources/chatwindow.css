@@ -1,0 +1,25 @@
+.borderpane {
+    -fx-max-width: 300px;
+    -fx-max-height: 300px;
+    -fx-background-color: rgba(38, 50, 56, 1);/*#263238*/
+    -fx-effect: dropshadow(gaussian, grey, 50, 0, 0, 0);
+}
+.chattextarea{
+    -fx-background-color: rgba(38, 50, 56, 1);
+     -fx-text-fill: white;
+     -fx-wrap-text: true;
+
+}
+
+.chattextarea .scroll-pane {
+    -fx-background-color: transparent;
+}
+
+.chattextarea .scroll-pane .viewport{
+    -fx-background-color: transparent;
+}
+
+
+.chattextarea .scroll-pane .content{
+    -fx-background-color: transparent;
+}

@@ -1,0 +1,15 @@
+.vbox {
+    -fx-max-width: 200px;
+    -fx-max-height: 150px;
+    -fx-background-color: rgba(38, 50, 56, 1);/*#263238*/
+   /* -fx-effect: dropshadow(gaussian, grey, 50, 0, 0, 0);*/
+}
+
+.vbox .viewport{
+    -fx-background-color: transparent;
+}
+
+
+.vbox .content{
+    -fx-background-color: transparent;
+}
